@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+master/
+*.zip
+*.db
+.claude/
+pdf2csv.exe

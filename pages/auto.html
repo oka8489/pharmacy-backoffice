@@ -1,0 +1,342 @@
+<h2 style="margin-bottom:8px">AI自動化ロードマップ</h2>
+<p style="color:var(--text2);margin-bottom:24px">薬局の事務業務をAIエージェントで段階的に自動化し、事務員3人→1人体制を実現する</p>
+
+<!-- フェーズ切替タブ -->
+<div class="sub-tabs">
+  <div class="sub-tab active" onclick="showSubTab('auto-ph1',this)">Phase 1<br><span style="font-size:11px">マニュアル化/アプリ化・支援</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph2',this)">Phase 2<br><span style="font-size:11px">事務自動化</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph3',this)">Phase 3<br><span style="font-size:11px">経理・労務自動化</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph4',this)">Phase 4<br><span style="font-size:11px">日常業務自動化</span></div>
+</div>
+
+<!-- Phase 1: マニュアル化・支援 -->
+<div id="auto-ph1" class="sub-pane active">
+<div class="card" style="border-left:4px solid #4CAF50">
+  <h3 style="color:#4CAF50">Phase 1：日常業務以外の事務作業をマニュアル化/アプリ化し支援</h3>
+  <p style="color:var(--text2);margin-bottom:16px">まず全ての事務作業を可視化・マニュアル化し、AIが支援できる体制を作る。</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:15%">ステータス</th><th style="width:15%">効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>業務の棚卸し・一覧化</b></td><td>全事務作業をリストアップ。頻度・所要時間・担当者を明確化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>業務の見える化</td></tr>
+      <tr><td><b>業務マニュアル作成</b></td><td>調剤・加算算定・届出・レセプト・在宅・日次月次業務の手順書をHTML化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>属人化の解消</td></tr>
+      <tr><td><b>就業規則の整備</b></td><td>勤務ルール・有給管理のマニュアル化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>労務の標準化</td></tr>
+      <tr><td><b>月次ダッシュボード構築</b></td><td>CSV取込→自動集計→売上推移・KPI表示。経営の見える化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>データ経営の基盤</td></tr>
+      <tr><td><b>統計表PDF→CSV自動変換</b></td><td>pdf2csv.pyでレセコン出力を自動CSV化。手入力を廃止。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>入力ミスゼロ</td></tr>
+      <tr><td><b>R8改定シミュレーター</b></td><td>報酬改定の影響を事前試算。届出変更のインパクトを可視化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>改定対応の最適化</td></tr>
+      <tr><td><b>経営改善提案</b></td><td>データから改善余地を分析。すぐできる施策・中長期施策を提示。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>売上増の道筋</td></tr>
+      <tr><td><b>データ永続化</b></td><td>localStorageからJSONファイル保存へ。データ消失を防止。</td><td><span style="color:#f59e0b">△ 着手中</span></td><td>運用安定性</td></tr>
+      <tr><td><b>レセプトデータ取込</b></td><td>UKEファイルをパースしてDB化。全データの自動取込基盤。</td><td><span style="color:#f59e0b">△ 設計中</span></td><td>手作業の大幅削減</td></tr>
+      <tr><td><b>薬剤マスタ整備</b></td><td>薬価・GE情報・棚番号をDB化。在庫管理と予製の基盤。</td><td><span style="color:var(--text2)">○ 未着手</span></td><td>在庫管理自動化の準備</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 1 図: データ基盤構築 -->
+  <div style="margin-top:20px;padding:16px;background:#f9f9f6;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 120" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4CAF50"/></marker></defs>
+      <!-- レセコン -->
+      <rect x="10" y="30" width="100" height="60" rx="8" fill="#fff" stroke="#4CAF50" stroke-width="2"/>
+      <text x="60" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">レセコン</text>
+      <text x="60" y="72" text-anchor="middle" font-size="10" fill="#888">PDF/CSV出力</text>
+      <!-- 矢印 -->
+      <line x1="110" y1="60" x2="160" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- pdf2csv -->
+      <rect x="160" y="30" width="100" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="210" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">pdf2csv.py</text>
+      <text x="210" y="72" text-anchor="middle" font-size="10" fill="#888">自動変換</text>
+      <!-- 矢印 -->
+      <line x1="260" y1="60" x2="310" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- DB -->
+      <rect x="310" y="30" width="100" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="360" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">DB</text>
+      <text x="360" y="72" text-anchor="middle" font-size="10" fill="#888">IndexedDB/JSON</text>
+      <!-- 矢印 -->
+      <line x1="410" y1="60" x2="460" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- migiude薬局バックオフィス -->
+      <rect x="460" y="20" width="130" height="80" rx="8" fill="#4CAF50" stroke="#388E3C" stroke-width="2"/>
+      <text x="525" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">migiude薬局バックオフィス</text>
+      <text x="525" y="67" text-anchor="middle" font-size="10" fill="#e8f5e9">ダッシュボード</text>
+      <text x="525" y="82" text-anchor="middle" font-size="10" fill="#e8f5e9">マニュアル・改善</text>
+      <!-- スタッフ -->
+      <line x1="590" y1="60" x2="640" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <text x="670" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">👩‍⚕️</text>
+      <text x="670" y="72" text-anchor="middle" font-size="10" fill="#888">スタッフ</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#e8f5e9;border-radius:8px">
+    <b>Phase 1の成果：</b>全業務が可視化され、AIが支援できる基盤が完成。誰でもマニュアルを見てアプリで簡単に業務ができる状態。
+  </div>
+</div>
+</div>
+
+<!-- Phase 2: 事務自動化 -->
+<div id="auto-ph2" class="sub-pane">
+<div class="card" style="border-left:4px solid #2196F3">
+  <h3 style="color:#2196F3">Phase 2：日常業務以外の事務作業を自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">事務作業をAIエージェントが自動実行。AIがスタッフの業務を管理し指示を出す。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#2196F3">目標：事務員が1人辞めても業務が回る状態（4人→3人でOK）</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:15%">自動化率</th><th style="width:15%">削減時間/月</th></tr></thead>
+    <tbody>
+      <tr><td><b>レセプト請求チェック</b></td><td>算定漏れ・入力ミスを自動検出。返戻リスクのある明細をハイライト。</td><td>80%</td><td>約4時間</td></tr>
+      <tr><td><b>届出書類の自動作成</b></td><td>施設基準の届出様式を自動生成。期限管理と提出リマインド。</td><td>90%</td><td>約2時間</td></tr>
+      <tr><td><b>予製候補の自動抽出</b></td><td>レセプト2ヶ月分から繰り返し処方を検出→予製リスト→カレンダー連携。</td><td>95%</td><td>約3時間</td></tr>
+      <tr><td><b>在庫発注アラート</b></td><td>消費パターンから発注点を学習。不足予測を3日前に通知。</td><td>70%</td><td>約2時間</td></tr>
+      <tr><td><b>シフト自動生成</b></td><td>有給・希望休・法定人数を考慮してシフト案を自動作成。</td><td>60%</td><td>約3時間</td></tr>
+      <tr><td><b>加算算定チェック</b></td><td>処方ごとに算定可能な加算を自動判定。取り漏れをアラート。</td><td>85%</td><td>売上増</td></tr>
+      <tr><td><b>タスク管理・指示出し</b></td><td>AIがスタッフごとの業務を管理。優先度を付けて指示。進捗を追跡。</td><td>70%</td><td>管理工数削減</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 2 図: AI業務管理フロー -->
+  <div style="margin-top:20px;padding:16px;background:#f5f9ff;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 180" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2196F3"/></marker></defs>
+      <!-- AIエージェント中央 -->
+      <rect x="250" y="10" width="200" height="50" rx="12" fill="#2196F3" stroke="#1565C0" stroke-width="2"/>
+      <text x="350" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">🤖 AIエージェント</text>
+      <text x="350" y="48" text-anchor="middle" font-size="10" fill="#bbdefb">業務管理・指示・チェック</text>
+      <!-- 下向き矢印群 -->
+      <line x1="200" y1="60" x2="200" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <line x1="350" y1="60" x2="350" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <line x1="500" y1="60" x2="500" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <!-- 接続線 -->
+      <line x1="200" y1="35" x2="250" y2="35" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="450" y1="35" x2="500" y2="35" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="200" y1="35" x2="200" y2="60" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="500" y1="35" x2="500" y2="60" stroke="#2196F3" stroke-width="1.5"/>
+      <!-- タスクボックス -->
+      <rect x="120" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="200" y="114" text-anchor="middle" font-size="11" fill="#333">レセプトチェック・届出</text>
+      <rect x="270" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="350" y="114" text-anchor="middle" font-size="11" fill="#333">予製・在庫・シフト</text>
+      <rect x="420" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="500" y="114" text-anchor="middle" font-size="11" fill="#333">加算チェック・アラート</text>
+      <!-- スタッフ -->
+      <line x1="350" y1="130" x2="350" y2="155" stroke="#999" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#ah2)"/>
+      <text x="350" y="172" text-anchor="middle" font-size="11" fill="#666">👩‍💼 スタッフは確認・承認のみ</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#e3f2fd;border-radius:8px">
+    <b>Phase 2の目標効果：</b>月あたり約14時間の事務削減 ＋ 加算取り漏れ防止による売上増。事務員1人分の業務をAIが吸収。
+  </div>
+</div>
+</div>
+
+<!-- Phase 3: 経理・労務自動化 -->
+<div id="auto-ph3" class="sub-pane">
+<div class="card" style="border-left:4px solid #9C27B0">
+  <h3 style="color:#9C27B0">Phase 3：経理・労務業務を自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">経理・労務をAIが処理。人間は最終確認のみ。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#9C27B0">目標：税理士・社労士の費用を1/4に削減</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:30%">期待効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>仕訳の自動記帳</b></td><td>レセプト・PL・請求書から仕訳を自動生成。<b>migiude経理</b>を使用。</td><td>記帳業務90%削減</td></tr>
+      <tr><td><b>月次試算表の自動作成</b></td><td>仕訳データから試算表・PL・BSを自動生成。税理士への報告を自動化。</td><td>月次報告の自動化</td></tr>
+      <tr><td><b>給与計算の自動化</b></td><td>シフト実績から勤怠集計→給与計算→明細作成。社保・税金も自動算定。<b>migiude労務</b>を使用。</td><td>給与計算工数ゼロ</td></tr>
+      <tr><td><b>年末調整の自動処理</b></td><td>スタッフから情報収集→計算→書類作成を自動化。<b>migiude労務</b>を使用。</td><td>年1回の大作業を削減</td></tr>
+      <tr><td><b>社会保険手続きの自動化</b></td><td>入退社・算定基礎届・月変届の自動作成。電子申請まで対応。<b>migiude労務</b>を使用。</td><td>社労士依頼の大幅削減</td></tr>
+      <tr><td><b>出退勤・有給アプリ作成</b></td><td>スタッフがスマホで打刻→勤怠データ自動集計。有給残日数の自動計算・取得義務（5日）未達アラート・36協定チェック。<b>migiude労務</b>を使用。</td><td>勤怠管理の完全自動化</td></tr>
+      <tr><td><b>請求書・領収書の自動処理</b></td><td>卸の請求書をスキャン→仕訳→支払スケジュール管理。インボイス対応。<b>migiude経理</b>を使用。</td><td>経費処理の自動化</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 3 図: migiudeエコシステム -->
+  <div style="margin-top:20px;padding:16px;background:#faf5ff;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 160" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9C27B0"/></marker></defs>
+      <!-- migiude薬局バックオフィス -->
+      <rect x="250" y="10" width="200" height="50" rx="12" fill="#9C27B0" stroke="#6A1B9A" stroke-width="2"/>
+      <text x="350" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">migiude薬局バックオフィス</text>
+      <text x="350" y="48" text-anchor="middle" font-size="10" fill="#e1bee7">売上・レセプト・在庫データ</text>
+      <!-- 左矢印: 経理 -->
+      <line x1="250" y1="35" x2="150" y2="35" stroke="#9C27B0" stroke-width="1.5"/>
+      <line x1="150" y1="35" x2="150" y2="80" stroke="#9C27B0" stroke-width="2" marker-end="url(#ah3)"/>
+      <rect x="60" y="80" width="180" height="50" rx="8" fill="#f3e5f5" stroke="#9C27B0" stroke-width="2"/>
+      <text x="150" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#6A1B9A">migiude経理</text>
+      <text x="150" y="117" text-anchor="middle" font-size="10" fill="#888">仕訳・PL・BS・請求書</text>
+      <!-- 右矢印: 労務 -->
+      <line x1="450" y1="35" x2="550" y2="35" stroke="#9C27B0" stroke-width="1.5"/>
+      <line x1="550" y1="35" x2="550" y2="80" stroke="#9C27B0" stroke-width="2" marker-end="url(#ah3)"/>
+      <rect x="460" y="80" width="180" height="50" rx="8" fill="#f3e5f5" stroke="#9C27B0" stroke-width="2"/>
+      <text x="550" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#6A1B9A">migiude労務</text>
+      <text x="550" y="117" text-anchor="middle" font-size="10" fill="#888">勤怠・給与・社保・有給</text>
+      <!-- 下: 税理士/社労士 -->
+      <line x1="150" y1="130" x2="150" y2="150" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+      <text x="150" y="158" text-anchor="middle" font-size="10" fill="#999">税理士（決算のみ）</text>
+      <line x1="550" y1="130" x2="550" y2="150" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+      <text x="550" y="158" text-anchor="middle" font-size="10" fill="#999">社労士（特殊案件のみ）</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#f3e5f5;border-radius:8px">
+    <b>Phase 3の目標効果：</b>
+    <table style="font-size:13px;margin-top:8px">
+      <tr><td>税理士顧問料</td><td style="padding:0 12px">現状 月5万円 →</td><td style="font-weight:bold;color:#9C27B0">月1.25万円（決算・税務申告のみ依頼）</td></tr>
+      <tr><td>社労士顧問料</td><td style="padding:0 12px">現状 月3万円 →</td><td style="font-weight:bold;color:#9C27B0">月0.75万円（特殊案件のみ依頼）</td></tr>
+      <tr><td colspan="3" style="font-weight:bold;padding-top:8px">年間削減額：約72万円</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- Phase 4: 日常業務自動化 -->
+<div id="auto-ph4" class="sub-pane">
+<div class="card" style="border-left:4px solid #FF5722">
+  <h3 style="color:#FF5722">Phase 4：日常業務をマニュアル化・自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">レセコンとAIを接続。処方箋を受けてからのレセコン作業をAIが行う。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#FF5722">目標：事務員3人→1人体制。薬剤師は対人業務に集中。</p>
+
+  <!-- レセコン作業代替フロー -->
+  <h4 style="margin-bottom:12px">レセコン作業の代替フロー</h4>
+  <div class="card" style="background:#fff5f2;border:1px solid #FF5722">
+    <table class="tbl" style="font-size:13px">
+      <thead><tr><th style="width:8%">Step</th><th style="width:30%">作業</th><th style="width:32%">現在（人が行う）</th><th style="width:30%">Phase 4（AIが行う）</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">①</td><td><b>レセコン入力</b></td><td>事務員が処方箋を見てレセコンに手入力</td><td>処方箋QRコード/OCR→NSIPS CSV→レセコンへ自動入力（Computer USE）</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">②</td><td><b>加算を選択</b></td><td>事務員・薬剤師が算定可能な加算を判断して手動選択</td><td>AIが患者情報・処方内容から算定可能な加算を自動判定・選択。取り漏れゼロ。</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">③</td><td><b>分包機・電子薬歴へ連携</b></td><td>レセコンから手動で連携操作</td><td>NSIPS経由で分包機・電子薬歴へ自動連携</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">④</td><td><b>印刷</b></td><td>処方箋控え・お薬説明書・報酬明細・薬袋・お薬手帳シールを個別に印刷操作</td><td>AIが一括印刷指示。印刷完了を自動確認。</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">⑤</td><td><b>目視確認</b></td><td>処方箋と調剤内容の照合を薬剤師が行う</td><td>AIが事前チェック済み。薬剤師は<b>確認・承認のみ</b>。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- NSIPS連携 -->
+  <h4 style="margin-top:24px;margin-bottom:12px">NSIPS（薬局間データ連携）によるAPI連携</h4>
+  <div class="card" style="background:#f5f9ff;border:1px solid #2196F3">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">エリシア（レセコン）はNSIPS対応。CSVファイルでデータを入出力でき、AIとの連携基盤になる。</p>
+    <p style="font-size:12px;margin-bottom:8px"><b>ファイル例：</b><code>SIPS1/RX2026032600013000000000000001.csv</code></p>
+    <div style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;overflow-x:auto;line-height:1.6">
+      <span style="color:#888">// 1: バージョンレコード（薬局情報）</span><br>
+      <span style="color:#ce9178">1</span>,01,,,,"<span style="color:#4ec9b0">大分調剤薬局</span>",,"0975-XX-XXXX",,<br><br>
+      <span style="color:#888">// 2: 患者レコード</span><br>
+      <span style="color:#ce9178">2</span>,01,,,"40123456","<span style="color:#4ec9b0">田中 太郎</span>","19600401","<span style="color:#b5cea8">1</span>","870-0000","大分県大分市○○1-2-3","097-XXX-XXXX",,<br><br>
+      <span style="color:#888">// 3: 処方レコード（医療機関・医師・診療科）</span><br>
+      <span style="color:#ce9178">3</span>,01,,,"13","<span style="color:#4ec9b0">2026-03-26</span>","1","131010","<span style="color:#4ec9b0">大分中央病院</span>","12345678","山田 一郎","01","内科",,<br><br>
+      <span style="color:#888">// 11: 薬品レコード（コード・薬品名・用量・回数・日数・用法）</span><br>
+      <span style="color:#ce9178">11</span>,01,01,"4","1234567890123","<span style="color:#4ec9b0">アムロジピン錠5mg「XX」</span>","5","mg","<span style="color:#b5cea8">1</span>","1","<span style="color:#b5cea8">28</span>","1","毎食後",,<br>
+      <span style="color:#ce9178">11</span>,01,02,"4","9876543210123","<span style="color:#4ec9b0">メトホルミン塩酸塩錠250mg</span>","250","mg","<span style="color:#b5cea8">3</span>","3","<span style="color:#b5cea8">28</span>","1","毎食後",,<br><br>
+      <span style="color:#888">// 9: エンドレコード</span><br>
+      <span style="color:#ce9178">9</span>,01,,
+    </div>
+    <table class="tbl" style="font-size:12px;margin-top:12px">
+      <thead><tr><th>先頭番号</th><th>レコード種別</th><th>主な内容</th></tr></thead>
+      <tbody>
+        <tr><td><code>1</code></td><td>バージョン</td><td>薬局名・電話番号</td></tr>
+        <tr><td><code>2</code></td><td>患者</td><td>患者ID・氏名・生年月日・性別・住所・電話番号</td></tr>
+        <tr><td><code>3</code></td><td>処方</td><td>受付番号・処方日・保険番号・医療機関・医師・診療科</td></tr>
+        <tr><td><code>11</code></td><td>薬品</td><td>コード種別・YJコード・薬品名・用量・単位・回数・日数・用法</td></tr>
+        <tr><td><code>9</code></td><td>エンド</td><td>ファイル終端</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;padding:10px;background:#e3f2fd;border-radius:6px;font-size:12px">
+      <b>連携フロー：</b>処方箋QRコード → NSIPS CSV生成 → AIがCSVを読み取り → レセコンへ自動入力 + 分包機・薬歴へ連携 → 印刷指示
+    </div>
+  </div>
+
+  <h4 style="margin-top:24px;margin-bottom:12px">AIが行う業務</h4>
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:30%">期待効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>処方箋→レセコン入力</b></td><td>処方箋QRコード/OCR→NSIPS CSV変換→Computer USEでレセコンに自動入力。</td><td>入力作業の自動化</td></tr>
+      <tr><td><b>分包機・薬歴連携</b></td><td>NSIPS経由で分包機の分包指示と電子薬歴への処方データ連携を自動実行。</td><td>連携作業の自動化</td></tr>
+      <tr><td><b>印刷一括指示</b></td><td>処方箋控え・お薬説明書・報酬明細・薬袋・お薬手帳シールを一括印刷。</td><td>印刷作業の自動化</td></tr>
+      <tr><td><b>薬歴記載の下書き</b></td><td>処方内容・患者情報から薬歴のSOAP下書きを自動生成。薬剤師は確認・修正のみ。</td><td>薬歴作成時間50%削減</td></tr>
+      <tr><td><b>レセプト自動作成・提出</b></td><td>月次の請求データを自動生成。チェック→オンライン提出。人間は最終承認のみ。</td><td>レセプト業務90%削減</td></tr>
+      <tr><td><b>在庫の自動発注</b></td><td>消費予測に基づき卸に自動発注。緊急・特殊品のみ人間判断。</td><td>欠品ゼロ・過剰在庫削減</td></tr>
+      <tr><td><b>患者フォローアップ</b></td><td>服薬フォローのメッセージ自動送信。返信内容を薬歴に反映。</td><td>フォロー率100%</td></tr>
+      <tr><td><b>監査対応資料の常時準備</b></td><td>個別指導・適時調査に必要な資料を常にDB上で整備。通知があれば即出力。</td><td>監査準備ゼロ</td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:24px;margin-bottom:12px">人が行う業務</h4>
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">担当</th><th style="width:70%">業務内容</th></tr></thead>
+    <tbody>
+      <tr><td><b>薬剤師（2名）</b></td><td>AIの作業確認・最終チェック、患者対応（服薬指導・相談）、薬の準備・監査、在宅訪問の営業・実施、かかりつけ業務</td></tr>
+      <tr><td><b>事務員（1名）</b></td><td>処方箋の受付・スキャン、電話対応、会計、AIが処理できない例外対応</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 4 図: 完全自動化の業務分担 -->
+  <div style="margin-top:20px;padding:16px;background:#fff5f2;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 220" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#FF5722"/></marker></defs>
+      <!-- 処方箋 -->
+      <rect x="10" y="20" width="90" height="50" rx="8" fill="#fff" stroke="#FF5722" stroke-width="2"/>
+      <text x="55" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">📄 処方箋</text>
+      <text x="55" y="55" text-anchor="middle" font-size="9" fill="#888">受付・スキャン</text>
+      <!-- 矢印 -->
+      <line x1="100" y1="45" x2="140" y2="45" stroke="#FF5722" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- AI -->
+      <rect x="140" y="10" width="220" height="70" rx="12" fill="#FF5722" stroke="#D84315" stroke-width="2"/>
+      <text x="250" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">🤖 AI（Computer USE）</text>
+      <text x="250" y="50" text-anchor="middle" font-size="10" fill="#ffccbc">レセコン操作・入力・チェック</text>
+      <text x="250" y="65" text-anchor="middle" font-size="10" fill="#ffccbc">薬歴下書き・レセプト作成</text>
+      <!-- 矢印: 確認 -->
+      <line x1="360" y1="45" x2="400" y2="45" stroke="#FF5722" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- 薬剤師確認 -->
+      <rect x="400" y="20" width="130" height="50" rx="8" fill="#fff3e0" stroke="#FF5722" stroke-width="2"/>
+      <text x="465" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">👩‍⚕️ 薬剤師</text>
+      <text x="465" y="55" text-anchor="middle" font-size="9" fill="#888">確認・承認のみ</text>
+      <!-- 矢印: 患者 -->
+      <line x1="530" y1="45" x2="570" y2="45" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- 患者対応 -->
+      <rect x="570" y="15" width="120" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="630" y="35" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">🧑 患者対応</text>
+      <text x="630" y="50" text-anchor="middle" font-size="9" fill="#888">服薬指導・相談</text>
+      <text x="630" y="63" text-anchor="middle" font-size="9" fill="#888">在宅訪問</text>
+      <!-- 下段: 人員構成 Before/After -->
+      <text x="15" y="115" font-size="12" font-weight="bold" fill="#333">現在</text>
+      <rect x="70" y="100" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="95" y="119" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="125" y="100" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="150" y="119" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="180" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="200" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="225" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="245" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="270" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="290" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="315" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="335" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <text x="375" y="119" font-size="12" fill="#333">= 6人</text>
+      <!-- 矢印 -->
+      <text x="350" y="155" text-anchor="middle" font-size="20" fill="#FF5722">▼</text>
+      <text x="15" y="190" font-size="12" font-weight="bold" fill="#FF5722">Phase 4</text>
+      <rect x="70" y="175" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="95" y="194" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="125" y="175" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="150" y="194" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="180" y="175" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="200" y="194" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="240" y="175" width="80" height="30" rx="4" fill="#FF5722" stroke="#D84315" stroke-width="1"/><text x="280" y="194" text-anchor="middle" font-size="9" fill="#fff">🤖 AI</text>
+      <text x="340" y="194" font-size="12" fill="#FF5722" font-weight="bold">= 3人+AI</text>
+      <!-- 削減テキスト -->
+      <text x="460" y="190" font-size="12" fill="#FF5722" font-weight="bold">▲事務員2名分 = 年間400〜500万円削減</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:16px;background:#fbe9e7;border-radius:8px">
+    <b>Phase 4の目標効果：</b>
+    <table style="font-size:13px;margin-top:8px">
+      <tr><td>事務員</td><td style="padding:0 12px">3人 →</td><td style="font-weight:bold;color:#FF5722">1人</td><td style="padding-left:12px;color:var(--text2)">もしもの時は薬剤師だけで対応可能、またはタイミー等の単発バイトで対応</td></tr>
+      <tr><td>人件費削減</td><td style="padding:0 12px" colspan="3"><span style="font-weight:bold;color:#FF5722">年間約400〜500万円</span>（事務員2名分の給与＋社保）</td></tr>
+      <tr><td>新たな収入源</td><td style="padding:0 12px" colspan="3">これまで出来なかった在宅の営業が可能に。在宅件数の増加で年間+100〜200万円</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- 全フェーズサマリ -->
+<div class="card" style="margin-top:24px;border:2px solid var(--accent)">
+  <h3 style="margin-bottom:16px">全フェーズ完了時の想定効果</h3>
+  <table class="tbl" style="font-size:14px">
+    <thead><tr><th style="text-align:left">項目</th><th style="text-align:left">現状</th><th style="text-align:left">Phase 4完了後</th><th style="text-align:right">年間効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>事務員</b></td><td>4人</td><td style="font-weight:bold;color:#FF5722">1人</td><td style="text-align:right;color:#FF5722;font-weight:bold">▲600〜750万円</td></tr>
+      <tr><td><b>税理士・社労士</b></td><td>月8万円</td><td style="font-weight:bold;color:#9C27B0">月2万円</td><td style="text-align:right;color:#9C27B0;font-weight:bold">▲72万円</td></tr>
+      <tr><td><b>加算取り漏れ防止</b></td><td>年間推定▲50万円</td><td>ほぼゼロ</td><td style="text-align:right;color:#4CAF50;font-weight:bold">+50万円</td></tr>
+      <tr><td><b>在宅訪問の拡大</b></td><td>月3件</td><td>月10件以上</td><td style="text-align:right;color:#4CAF50;font-weight:bold">+100〜200万円</td></tr>
+      <tr style="background:#fff3e0;font-size:16px"><td colspan="3"><b>年間の経営改善効果合計</b></td><td style="text-align:right;font-weight:bold;color:#FF5722;font-size:18px">+822〜1,072万円</td></tr>
+    </tbody>
+  </table>
+</div>

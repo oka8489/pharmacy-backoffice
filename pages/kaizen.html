@@ -1,0 +1,44 @@
+<!-- 達成目標・累積件数 -->
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      施設基準 達成目標（R7.5〜R8.4 年間累積）
+      <button class="btn btn-secondary" onclick="updateGoals()" style="font-size:11px;padding:4px 12px">更新</button>
+    </div>
+    <div id="goal-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">売上推移</div>
+    <div style="overflow-x:auto">
+      <table class="entry-tbl" id="trend-table" style="font-size:15px">
+        <thead id="trend-thead"></thead>
+        <tbody id="trend-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">経営改善プラン</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:8px">入力済みデータに基づいて改善案を表示します。</p>
+    <button class="btn btn-primary" onclick="analyzeKaizen()">分析する</button>
+    <div id="kaizen-status" style="font-size:13px;color:var(--text2);margin-top:8px;min-height:20px"></div>
+  </div>
+
+  <!-- すぐにできる -->
+  <div class="section">
+    <div class="section-title" style="color:#2e7d32">すぐにできる改善案</div>
+    <div id="kaizen-now"></div>
+  </div>
+
+  <!-- ベンチマーク比較 -->
+  <div class="section">
+    <div class="section-title" style="color:#1565c0">ベンチマーク比較で見える改善案</div>
+    <div id="kaizen-bench"></div>
+  </div>
+
+  <!-- 中長期 -->
+  <div class="section">
+    <div class="section-title" style="color:#f57f17">中長期で取り組む改善案</div>
+    <div id="kaizen-long"></div>
+  </div>

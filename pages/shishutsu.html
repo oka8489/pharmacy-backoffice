@@ -1,0 +1,87 @@
+<h2 style="margin-bottom:8px">支出管理</h2>
+<p style="color:var(--text2);margin-bottom:20px">決算書（PL）・月次試算表をアップロードして支出データを取り込みます</p>
+
+<!-- PLアップロード -->
+<div class="card" style="border-left:4px solid var(--accent)">
+  <h3>PLデータ取込</h3>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:12px">月次試算表または損益計算書（CSV / Excel / PDF）をアップロードしてください。科目を自動で振り分けます。</p>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <input type="file" id="pl-file" accept=".csv,.xlsx,.xls,.pdf" style="font-size:13px">
+    <button onclick="importPL()" style="padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:14px">取り込み</button>
+    <span id="pl-status" style="font-size:13px;color:var(--text2)"></span>
+  </div>
+  <div style="font-size:12px;color:var(--text2)">
+    <b>対応形式：</b>CSV（科目名,金額）、Excel（月次試算表）、PDF（決算書）<br>
+    <b>ヒント：</b>会計ソフト（freee / マネーフォワード / 弥生）からCSVエクスポートが最も確実です
+  </div>
+</div>
+
+<!-- 期間選択 -->
+<div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <label><b>表示期間：</b></label>
+  <select id="pl-period" onchange="renderPL()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px">
+    <option value="">データなし</option>
+  </select>
+</div>
+
+<!-- PL表示 -->
+<div class="card">
+  <h3>損益計算書（PL）</h3>
+  <table class="tbl" style="font-size:13px" id="pl-table">
+    <thead><tr><th style="text-align:left">勘定科目</th><th style="text-align:right;width:150px">金額</th><th style="text-align:right;width:100px">構成比</th></tr></thead>
+    <tbody>
+      <tr style="background:#e8f5e9;font-weight:bold"><td>【売上高】</td><td id="pl_uriage" style="text-align:right">-</td><td style="text-align:right">100%</td></tr>
+      <tr><td style="padding-left:20px">調剤報酬</td><td id="pl_chozai" style="text-align:right">-</td><td id="pl_chozai_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">保険外収入</td><td id="pl_hokengai" style="text-align:right">-</td><td id="pl_hokengai_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#fff3e0;font-weight:bold"><td>【売上原価】</td><td id="pl_genka" style="text-align:right">-</td><td id="pl_genka_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">医薬品仕入高</td><td id="pl_shiire" style="text-align:right">-</td><td id="pl_shiire_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#e3f2fd;font-weight:bold"><td>【売上総利益（粗利）】</td><td id="pl_arari" style="text-align:right">-</td><td id="pl_arari_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#fce4ec;font-weight:bold"><td>【販管費】</td><td id="pl_hankan" style="text-align:right">-</td><td id="pl_hankan_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">給与手当</td><td id="pl_kyuyo" style="text-align:right">-</td><td id="pl_kyuyo_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">法定福利費</td><td id="pl_fukuri" style="text-align:right">-</td><td id="pl_fukuri_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">地代家賃</td><td id="pl_yachin" style="text-align:right">-</td><td id="pl_yachin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">リース料</td><td id="pl_lease" style="text-align:right">-</td><td id="pl_lease_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">水道光熱費</td><td id="pl_kounetsu" style="text-align:right">-</td><td id="pl_kounetsu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">通信費</td><td id="pl_tsushin" style="text-align:right">-</td><td id="pl_tsushin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">消耗品費</td><td id="pl_shomohin" style="text-align:right">-</td><td id="pl_shomohin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">旅費交通費</td><td id="pl_kotsu" style="text-align:right">-</td><td id="pl_kotsu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">研修費</td><td id="pl_kenshu" style="text-align:right">-</td><td id="pl_kenshu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">減価償却費</td><td id="pl_genka_sh" style="text-align:right">-</td><td id="pl_genka_sh_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">保険料</td><td id="pl_hoken" style="text-align:right">-</td><td id="pl_hoken_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">その他販管費</td><td id="pl_other" style="text-align:right">-</td><td id="pl_other_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#e8f5e9;font-weight:bold;font-size:15px"><td>【営業利益】</td><td id="pl_rieki" style="text-align:right">-</td><td id="pl_rieki_r" style="text-align:right">-</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 手入力フォールバック -->
+<details style="margin-top:16px">
+  <summary style="cursor:pointer;font-size:14px;color:var(--accent)">PLデータがない場合は手入力</summary>
+  <div class="card" style="margin-top:8px">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+      <label><b>対象月：</b></label>
+      <input type="month" id="shishutsu-month" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px">
+      <button onclick="saveShishutsuManual()" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:var(--radius);cursor:pointer">保存</button>
+    </div>
+    <table class="tbl" style="font-size:13px">
+      <thead><tr><th>科目</th><th style="width:150px">金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td>医薬品仕入高</td><td><input type="text" id="sh_shiire" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>給与手当</td><td><input type="text" id="sh_kyuyo" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>法定福利費</td><td><input type="text" id="sh_fukuri" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>地代家賃</td><td><input type="text" id="sh_yachin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>リース料</td><td><input type="text" id="sh_lease" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>水道光熱費</td><td><input type="text" id="sh_kounetsu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>通信費</td><td><input type="text" id="sh_tsushin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>消耗品費</td><td><input type="text" id="sh_shomohin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>旅費交通費</td><td><input type="text" id="sh_kotsu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>研修費</td><td><input type="text" id="sh_kenshu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>その他</td><td><input type="text" id="sh_other" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>

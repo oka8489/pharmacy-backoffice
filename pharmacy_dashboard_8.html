@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>migiude薬局バックオフィス | アフェット薬局</title>
+<link rel="stylesheet" href="migiude.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-title">migiude薬局バックオフィス | アフェット薬局</div>
+  <div class="nav-tab active" onclick="showPage('input')">月次報酬</div>
+  <div class="nav-tab" onclick="showPage('r8')">R8改定</div>
+  <div class="nav-tab" onclick="showPage('shishutsu')">支出</div>
+  <div class="nav-tab" onclick="showPage('kaizen')">経営改善</div>
+  <div class="nav-tab" onclick="showPage('calendar')">予定</div>
+  <div class="nav-tab" onclick="showPage('zaiko')">在庫管理</div>
+  <div class="nav-tab" onclick="showPage('manual')">マニュアル</div>
+  <div class="nav-tab" onclick="showPage('auto')">自動化</div>
+  <div class="nav-tab" onclick="showPage('memo')">メモ</div>
+</nav>
+
+<div id="page-input" class="page active">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px">
+
+    <div class="import-panel panel-tokei" onclick="document.getElementById('file-csv').click()"
+      ondragover="event.preventDefault()"
+      ondrop="handleCsvDrop(event)">
+      <input type="file" id="file-csv" accept=".csv,.CSV" multiple onchange="handleCsvFiles(this.files)">
+      <h3>① 統計表CSV</h3>
+      <p>pdf2csv.pyで変換したCSV（複数月OK）</p>
+    </div>
+
+    <div class="import-panel panel-naiyaku" onclick="document.getElementById('file-kazan').click()"
+      ondragover="event.preventDefault()"
+      ondrop="handleKazanDrop(event)">
+      <input type="file" id="file-kazan" accept=".csv,.CSV" multiple onchange="handleCsvFiles(this.files, 'kazan')">
+      <h3>② 加算種別内訳表</h3>
+      <p>pdf2csv.pyで変換したCSV（複数月OK）</p>
+    </div>
+
+    <div class="import-panel panel-uke" onclick="document.getElementById('file-uke').click()"
+      ondragover="event.preventDefault()"
+      ondrop="handleUkeDrop(event)">
+      <input type="file" id="file-uke" accept=".UKE,.uke" multiple onchange="handleUkeFile(this.files)">
+      <h3>③ レセプト（UKE）</h3>
+      <p>RECEIPTS.UKE（社保・国保、複数月OK）</p>
+    </div>
+
+  </div>
+  <div id="uke-status" style="margin-bottom:12px;font-size:13px;color:var(--teal);min-height:20px"></div>
+
+  <div class="period-bar" style="margin-bottom:16px">
+    <label>入力対象月</label>
+    <input type="month" id="input-month" value="2025-05" min="2025-05">
+    <button class="btn btn-primary" onclick="saveEntry()">💾 保存</button>
+    <button class="btn btn-secondary" onclick="loadEntry()">読み込み</button>
+    <div class="spacer"></div>
+    <button class="btn btn-secondary" onclick="saveToFile()" title="自動保存先のJSONファイルを選択" id="btn-autosave">💾 自動保存先を設定</button>
+    <button class="btn btn-secondary" onclick="exportJSON()" title="全データをJSONファイルに保存">📤 エクスポート</button>
+    <label class="btn btn-secondary" style="cursor:pointer" title="JSONファイルからデータを復元">
+      📥 インポート
+      <input type="file" id="import-file" accept=".json" onchange="importJSON(this)">
+    </label>
+    <button class="btn btn-secondary" onclick="deleteEntry()">🗑 この月を削除</button>
+  </div>
+
+  <div id="month-list" class="month-tabs"></div>
+
+  <!-- 予製候補 -->
+  <div class="section" id="yocho-section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      予製候補
+      <button class="btn btn-secondary" onclick="toggleYocho()" style="font-size:11px;padding:4px 12px" id="yocho-toggle">表示</button>
+    </div>
+    <div id="yocho-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">2ヶ月以上連続で同じ処方がある患者を予製候補として表示します。候補をカレンダーに追加できます。</p>
+      <div id="yocho-list"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      月次合計
+      <button class="btn btn-secondary" onclick="calcGrandTotal()" style="font-size:11px;padding:4px 12px">自動計算</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+      <div style="background:var(--bg2);border:1.5px solid var(--teal);border-radius:var(--radius);padding:16px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">医療保険売上</div>
+        <input type="number" id="e_ika_total" style="font-size:22px;font-weight:700;width:100%;background:transparent;border:none;color:var(--text);padding:0">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">円</div>
+      </div>
+      <div style="background:var(--bg2);border:1.5px solid var(--green);border-radius:var(--radius);padding:16px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">介護保険売上</div>
+        <input type="number" id="e_kaigo_total_summary" style="font-size:22px;font-weight:700;width:100%;background:transparent;border:none;color:var(--text);padding:0">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">円</div>
+      </div>
+      <div style="background:var(--bg2);border:1.5px solid var(--amber);border-radius:var(--radius);padding:16px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">その他売上</div>
+        <input type="number" id="e_other_total_summary" style="font-size:22px;font-weight:700;width:100%;background:transparent;border:none;color:var(--text);padding:0">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">円</div>
+      </div>
+      <div style="background:var(--bg2);border:1.5px solid var(--purple);border-radius:var(--radius);padding:16px">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">総売上</div>
+        <input type="number" id="e_grand_total" style="font-size:22px;font-weight:700;width:100%;background:transparent;border:none;color:var(--purple);padding:0">
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">円</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">基本指標</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:260px">項目</th><th>当月値</th><th style="width:60px">単位</th></tr></thead>
+      <tbody>
+        <tr><td class="label">処方箋受付回数</td><td><input type="number" id="e_rx_count"></td><td class="label" style="text-align:center">回</td></tr>
+        <tr><td class="label">処方箋受付枚数</td><td><input type="number" id="e_rx_sheets"></td><td class="label" style="text-align:center">枚</td></tr>
+        <tr><td class="label">後発調剤率</td><td><input type="number" id="e_ge_rate" step="0.01"></td><td class="label" style="text-align:center">%</td></tr>
+        <tr><td class="label">剤数</td><td><input type="number" id="e_zai_count"></td><td class="label" style="text-align:center">剤</td></tr>
+        <tr><td class="label">平均剤数</td><td><input type="number" id="e_avg_zai" step="0.01"></td><td class="label" style="text-align:center">剤</td></tr>
+        <tr><td class="label">処方箋報酬金額</td><td><input type="number" id="e_total_reward"></td><td class="label" style="text-align:center">円</td></tr>
+        <tr><td class="label">処方箋単価</td><td><input type="number" id="e_rx_price" step="0.01"></td><td class="label" style="text-align:center">円</td></tr>
+        <tr><td class="label">手帳活用実績（持参率）</td><td><input type="number" id="e_techo_rate" step="0.01"></td><td class="label" style="text-align:center">%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">調剤基本料・体制加算</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:260px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">調剤基本料 <span class="badge-r8 henkou">R8点数変更</span></td>
+          <td><input type="number" id="e_kihon45_cnt" oninput="calcKihonRow(this)"></td>
+          <td><select id="e_kihon45_pt" onchange="calcKihonRow(this)">
+            <option value="45">基本料1（45点）</option><option value="29">基本料2（29点）</option>
+            <option value="24">基本料3イ（24点）</option><option value="19">基本料3ロ（19点）</option>
+            <option value="35">基本料3ハ（35点）</option><option value="32">特別A（32点）</option>
+            <option value="5">特別B（5点）</option>
+          </select></td>
+          <td><input type="number" id="e_kihon45_amt"></td></tr>
+        <tr><td class="label">地域支援体制加算 <span class="badge-r8 tougo">R8名称変更・統合</span></td>
+          <td><input type="number" id="e_chiiki_cnt" oninput="calcKihonRow(this)"></td>
+          <td><select id="e_chiiki_pt" onchange="calcKihonRow(this)">
+            <option value="0">算定なし</option><option value="32">加算1（32点）</option>
+            <option value="40">加算2（40点）</option><option value="10">加算3（10点）</option>
+            <option value="32">加算4（32点）</option>
+          </select></td>
+          <td><input type="number" id="e_chiiki_amt"></td></tr>
+        <tr><td class="label">後発医薬品調剤体制加算 <span class="badge-r8 haishi">R8廃止</span></td>
+          <td><input type="number" id="e_kouhatsu_cnt" oninput="calcKihonRow(this)"></td>
+          <td><select id="e_kouhatsu_pt" onchange="calcKihonRow(this)">
+            <option value="0">算定なし</option><option value="21">加算1（21点）</option>
+            <option value="28">加算2（28点）</option><option value="30">加算3（30点）</option>
+          </select></td>
+          <td><input type="number" id="e_kouhatsu_amt"></td></tr>
+        <tr><td class="label">連携強化加算（5点）</td><td><input type="number" id="e_renkei_cnt"></td><td><input type="number" id="e_renkei_pt" value="5"></td><td><input type="number" id="e_renkei_amt"></td></tr>
+        <tr><td class="label">医療DX推進体制整備加算（8点）<span class="badge-r8 henkou">R8名称変更</span></td><td><input type="number" id="e_dx8_cnt"></td><td><input type="number" id="e_dx8_pt" value="8"></td><td><input type="number" id="e_dx8_amt"></td></tr>
+        <tr><td class="label">医療DX推進体制整備加算（10点）<span class="badge-r8 henkou">R8名称変更</span></td><td><input type="number" id="e_dx10_cnt"></td><td><input type="number" id="e_dx10_pt" value="10"></td><td><input type="number" id="e_dx10_amt"></td></tr>
+        <tr><td class="label">在宅薬学総合体制加算 </td>
+          <td><input type="number" id="e_zaitaku15_cnt" oninput="calcKihonRow(this)"></td>
+          <td><select id="e_zaitaku15_pt" onchange="calcKihonRow(this)">
+            <option value="0">算定なし</option><option value="15">加算1（15点）</option>
+            <option value="50">加算2（50点）</option>
+          </select></td>
+          <td><input type="number" id="e_zaitaku15_amt"></td></tr>
+        <tr><td class="label">夜間・休日等加算（40点）</td><td><input type="number" id="e_yakan_cnt"></td><td><input type="number" id="e_yakan_pt" value="40"></td><td><input type="number" id="e_yakan_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 調剤基本料合計</td><td></td><td></td><td><input type="number" id="e_kihon_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬剤調製料</div>
+    <table class="entry-tbl">
+      <thead><tr>
+        <th style="text-align:left;width:60px">剤種</th>
+        <th>算定単位</th>
+        <th>剤数</th>
+        <th>薬剤料（円）</th>
+        <th>件数</th>
+        <th>点数</th>
+        <th>金額（円）</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="label">内服</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1剤につき（3剤まで）</td>
+          <td><input type="number" id="e_naifuku_zai"></td>
+          <td><input type="number" id="e_naifuku_yakuzai"></td>
+          <td><input type="number" id="e_naifuku_cnt"></td>
+          <td style="text-align:center">24</td>
+          <td><input type="number" id="e_naifuku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">浸煎</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき、3調剤まで</td>
+          <td><input type="number" id="e_sinsenn_zai"></td>
+          <td><input type="number" id="e_sinsenn_yakuzai"></td>
+          <td><input type="number" id="e_sinsenn_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="e_sinsenn_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">湯薬</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき、3調剤まで</td>
+          <td><input type="number" id="e_yuyaku_zai"></td>
+          <td><input type="number" id="e_yuyaku_yakuzai"></td>
+          <td><input type="number" id="e_yuyaku_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="e_yuyaku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">屯服</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">処方箋受付1回につき</td>
+          <td><input type="number" id="e_tonpuku_zai"></td>
+          <td><input type="number" id="e_tonpuku_yakuzai"></td>
+          <td><input type="number" id="e_tonpuku_cnt"></td>
+          <td style="text-align:center">21</td>
+          <td><input type="number" id="e_tonpuku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">外用</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき（3調剤まで）</td>
+          <td><input type="number" id="e_gaiyou_zai"></td>
+          <td><input type="number" id="e_gaiyou_yakuzai"></td>
+          <td><input type="number" id="e_gaiyou_cnt"></td>
+          <td style="text-align:center">10</td>
+          <td><input type="number" id="e_gaiyou_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">注射</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1処方箋につき</td>
+          <td><input type="number" id="e_chusya_zai"></td>
+          <td><input type="number" id="e_chusya_yakuzai"></td>
+          <td><input type="number" id="e_chusya_cnt"></td>
+          <td style="text-align:center">26</td>
+          <td><input type="number" id="e_chusya_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">内滴</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき</td>
+          <td><input type="number" id="e_naiteki_zai"></td>
+          <td><input type="number" id="e_naiteki_yakuzai"></td>
+          <td><input type="number" id="e_naiteki_cnt"></td>
+          <td style="text-align:center">10</td>
+          <td><input type="number" id="e_naiteki_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">材料</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center"></td>
+          <td><input type="number" id="e_zairyo_zai"></td>
+          <td><input type="number" id="e_zairyo_yakuzai"></td>
+          <td><input type="number" id="e_zairyo_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="e_zairyo_amt"></td>
+        </tr>
+        <tr class="total">
+          <td class="label">◆ 合計</td>
+          <td></td><td></td><td></td>
+          <td><input type="number" id="e_chozai_cnt_total"></td>
+          <td></td>
+          <td><input type="number" id="e_chozai_total"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬剤調製料加算（円）</div>
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" style="min-width:900px;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;width:60px">剤種</th>
+        <th>麻薬</th><th>毒薬</th><th>覚醒剤</th><th>向精神</th>
+        <th>計量</th><th>計量予</th><th>自家</th><th>自家予</th>
+        <th>無菌<br></th><th>時間外</th><th>加算合計</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="label">内服</td>
+          <td><input type="number" id="e_kaz_nai_mayaku"></td>
+          <td><input type="number" id="e_kaz_nai_doku"></td>
+          <td><input type="number" id="e_kaz_nai_kakusei"></td>
+          <td><input type="number" id="e_kaz_nai_mukyoko"></td>
+          <td><input type="number" id="e_kaz_nai_keiryo"></td>
+          <td><input type="number" id="e_kaz_nai_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_nai_jika"></td>
+          <td><input type="number" id="e_kaz_nai_jika_yo"></td>
+          <td><input type="number" id="e_kaz_nai_mukin"></td>
+          <td><input type="number" id="e_kaz_nai_jikou"></td>
+          <td><input type="number" id="e_kaz_nai_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">浸煎</td>
+          <td><input type="number" id="e_kaz_sin_mayaku"></td>
+          <td><input type="number" id="e_kaz_sin_doku"></td>
+          <td><input type="number" id="e_kaz_sin_kakusei"></td>
+          <td><input type="number" id="e_kaz_sin_mukyoko"></td>
+          <td><input type="number" id="e_kaz_sin_keiryo"></td>
+          <td><input type="number" id="e_kaz_sin_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_sin_jika"></td>
+          <td><input type="number" id="e_kaz_sin_jika_yo"></td>
+          <td><input type="number" id="e_kaz_sin_mukin"></td>
+          <td><input type="number" id="e_kaz_sin_jikou"></td>
+          <td><input type="number" id="e_kaz_sin_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">湯薬</td>
+          <td><input type="number" id="e_kaz_yu_mayaku"></td>
+          <td><input type="number" id="e_kaz_yu_doku"></td>
+          <td><input type="number" id="e_kaz_yu_kakusei"></td>
+          <td><input type="number" id="e_kaz_yu_mukyoko"></td>
+          <td><input type="number" id="e_kaz_yu_keiryo"></td>
+          <td><input type="number" id="e_kaz_yu_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_yu_jika"></td>
+          <td><input type="number" id="e_kaz_yu_jika_yo"></td>
+          <td><input type="number" id="e_kaz_yu_mukin"></td>
+          <td><input type="number" id="e_kaz_yu_jikou"></td>
+          <td><input type="number" id="e_kaz_yu_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">屯服</td>
+          <td><input type="number" id="e_kaz_ton_mayaku"></td>
+          <td><input type="number" id="e_kaz_ton_doku"></td>
+          <td><input type="number" id="e_kaz_ton_kakusei"></td>
+          <td><input type="number" id="e_kaz_ton_mukyoko"></td>
+          <td><input type="number" id="e_kaz_ton_keiryo"></td>
+          <td><input type="number" id="e_kaz_ton_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_ton_jika"></td>
+          <td><input type="number" id="e_kaz_ton_jika_yo"></td>
+          <td><input type="number" id="e_kaz_ton_mukin"></td>
+          <td><input type="number" id="e_kaz_ton_jikou"></td>
+          <td><input type="number" id="e_kaz_ton_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">外用</td>
+          <td><input type="number" id="e_kaz_gai_mayaku"></td>
+          <td><input type="number" id="e_kaz_gai_doku"></td>
+          <td><input type="number" id="e_kaz_gai_kakusei"></td>
+          <td><input type="number" id="e_kaz_gai_mukyoko"></td>
+          <td><input type="number" id="e_kaz_gai_keiryo"></td>
+          <td><input type="number" id="e_kaz_gai_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_gai_jika"></td>
+          <td><input type="number" id="e_kaz_gai_jika_yo"></td>
+          <td><input type="number" id="e_kaz_gai_mukin"></td>
+          <td><input type="number" id="e_kaz_gai_jikou"></td>
+          <td><input type="number" id="e_kaz_gai_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">注射</td>
+          <td><input type="number" id="e_kaz_chu_mayaku"></td>
+          <td><input type="number" id="e_kaz_chu_doku"></td>
+          <td><input type="number" id="e_kaz_chu_kakusei"></td>
+          <td><input type="number" id="e_kaz_chu_mukyoko"></td>
+          <td><input type="number" id="e_kaz_chu_keiryo"></td>
+          <td><input type="number" id="e_kaz_chu_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_chu_jika"></td>
+          <td><input type="number" id="e_kaz_chu_jika_yo"></td>
+          <td><input type="number" id="e_kaz_chu_mukin"></td>
+          <td><input type="number" id="e_kaz_chu_jikou"></td>
+          <td><input type="number" id="e_kaz_chu_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">内滴</td>
+          <td><input type="number" id="e_kaz_nai2_mayaku"></td>
+          <td><input type="number" id="e_kaz_nai2_doku"></td>
+          <td><input type="number" id="e_kaz_nai2_kakusei"></td>
+          <td><input type="number" id="e_kaz_nai2_mukyoko"></td>
+          <td><input type="number" id="e_kaz_nai2_keiryo"></td>
+          <td><input type="number" id="e_kaz_nai2_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_nai2_jika"></td>
+          <td><input type="number" id="e_kaz_nai2_jika_yo"></td>
+          <td><input type="number" id="e_kaz_nai2_mukin"></td>
+          <td><input type="number" id="e_kaz_nai2_jikou"></td>
+          <td><input type="number" id="e_kaz_nai2_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">材料</td>
+          <td><input type="number" id="e_kaz_mat_mayaku"></td>
+          <td><input type="number" id="e_kaz_mat_doku"></td>
+          <td><input type="number" id="e_kaz_mat_kakusei"></td>
+          <td><input type="number" id="e_kaz_mat_mukyoko"></td>
+          <td><input type="number" id="e_kaz_mat_keiryo"></td>
+          <td><input type="number" id="e_kaz_mat_keiryo_yo"></td>
+          <td><input type="number" id="e_kaz_mat_jika"></td>
+          <td><input type="number" id="e_kaz_mat_jika_yo"></td>
+          <td><input type="number" id="e_kaz_mat_mukin"></td>
+          <td><input type="number" id="e_kaz_mat_jikou"></td>
+          <td><input type="number" id="e_kaz_mat_total" style="font-weight:600"></td>
+        </tr>
+        <tr class="total"><td class="label">合計</td>
+          <td><input type="number" id="e_kaz_col_mayaku" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_doku" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_kakusei" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_mukyoko" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_keiryo" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_keiryo_yo" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_jika" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_jika_yo" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_mukin" style="font-weight:600"></td>
+          <td><input type="number" id="e_kaz_col_jikou" style="font-weight:600"></td>
+          <td><input type="number" id="e_chozai_kazan_total" style="font-weight:700;color:var(--purple)"></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬学管理料</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">調剤管理料（内服）<span class="badge-r8 henkou">R8区分変更</span></td><td></td><td></td><td><input type="number" id="e_chmgr_nai_amt"></td></tr>
+        <tr><td class="label">　イ）7日分以下（4点）</td><td><input type="number" id="e_chmgr_7_cnt"></td><td style="text-align:center">4</td><td><input type="number" id="e_chmgr_7_amt"></td></tr>
+        <tr><td class="label">　ロ）8日〜14日（28点）</td><td><input type="number" id="e_chmgr_8_14_cnt"></td><td style="text-align:center">28</td><td><input type="number" id="e_chmgr_8_14_amt"></td></tr>
+        <tr><td class="label">　ハ）15日〜28日（50点）</td><td><input type="number" id="e_chmgr_15_28_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="e_chmgr_15_28_amt"></td></tr>
+        <tr><td class="label">　ニ）29日以上（60点）</td><td><input type="number" id="e_chmgr_29_cnt"></td><td style="text-align:center">60</td><td><input type="number" id="e_chmgr_29_amt"></td></tr>
+        <tr><td class="label">調剤管理料（内服以外）（4点）</td><td><input type="number" id="e_chmgr_other_cnt"></td><td style="text-align:center">4</td><td><input type="number" id="e_chmgr_other_amt"></td></tr>
+        <tr><td class="label">重複投薬・相互作用等防止加算（残薬以外）（40点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_jukufuku_other_cnt"></td><td style="text-align:center">40</td><td><input type="number" id="e_jukufuku_other_amt"></td></tr>
+        <tr><td class="label">重複投薬・相互作用等防止加算（残薬）（20点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_jukufuku_zan_cnt"></td><td style="text-align:center">20</td><td><input type="number" id="e_jukufuku_zan_amt"></td></tr>
+        <tr><td class="label">医療情報取得加算（1点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_iryo_joho_cnt"></td><td style="text-align:center">1</td><td><input type="number" id="e_iryo_joho_amt"></td></tr>
+        <tr><td class="label">時間外加算（調剤管理料）</td><td></td><td></td><td><input type="number" id="e_jikangai_kanri_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料（薬A）手帳あり3月以内（45点）</td><td><input type="number" id="e_fuyaku_a_cnt"></td><td style="text-align:center">45</td><td><input type="number" id="e_fuyaku_a_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料（薬B）手帳なし3月以内（59点）</td><td><input type="number" id="e_fuyaku_b_cnt"></td><td style="text-align:center">59</td><td><input type="number" id="e_fuyaku_b_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料（薬C）3月以外（59点）</td><td><input type="number" id="e_fuyaku_c_cnt"></td><td style="text-align:center">59</td><td><input type="number" id="e_fuyaku_c_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料（薬3）特養入居者（45点）</td><td><input type="number" id="e_fuyaku_3_cnt"></td><td style="text-align:center">45</td><td><input type="number" id="e_fuyaku_3_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料（特2A）連携薬剤師（59点）</td><td><input type="number" id="e_fuyaku_toku2a_cnt"></td><td style="text-align:center">59</td><td><input type="number" id="e_fuyaku_toku2a_amt"></td></tr>
+        <tr><td class="label">かかりつけ薬剤師指導料（76点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_kakari_76_cnt"></td><td style="text-align:center">76</td><td><input type="number" id="e_kakari_76_amt"></td></tr>
+        <tr><td class="label">麻薬管理指導加算（70点）</td><td><input type="number" id="e_mayaku_shido_cnt"></td><td style="text-align:center">70</td><td><input type="number" id="e_mayaku_shido_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算1（イ）ハイリスク新規（10点）</td><td><input type="number" id="e_tokutei_1i_cnt"></td><td style="text-align:center">10</td><td><input type="number" id="e_tokutei_1i_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算1（ロ）変化時（5点）</td><td><input type="number" id="e_tokutei_1ro_cnt"></td><td style="text-align:center">5</td><td><input type="number" id="e_tokutei_1ro_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算2　抗悪性腫瘍剤（100点）</td><td><input type="number" id="e_tokutei_2_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="e_tokutei_2_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算3（イ）RMP（5点）</td><td><input type="number" id="e_tokutei_3i_cnt"></td><td style="text-align:center">5</td><td><input type="number" id="e_tokutei_3i_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算3（ロ）選定療養・銘柄変更（10点）</td><td><input type="number" id="e_tokutei_3ro_cnt"></td><td style="text-align:center">10</td><td><input type="number" id="e_tokutei_3ro_amt"></td></tr>
+        <tr><td class="label">乳幼児服薬指導加算（12点）</td><td><input type="number" id="e_nyuyoji_12_cnt"></td><td style="text-align:center">12</td><td><input type="number" id="e_nyuyoji_12_amt"></td></tr>
+        <tr><td class="label">小児特定加算（350点）</td><td><input type="number" id="e_shoni_350_cnt"></td><td style="text-align:center">350</td><td><input type="number" id="e_shoni_350_amt"></td></tr>
+        <tr><td class="label">吸入薬指導加算（30点）<span class="badge-r8 henkou">R8算定間隔変更</span></td><td><input type="number" id="e_kyunyu_30_cnt"></td><td style="text-align:center">30</td><td><input type="number" id="e_kyunyu_30_amt"></td></tr>
+        <tr><td class="label">調剤後薬剤管理指導料（60点）</td><td><input type="number" id="e_chozaigo_60_cnt"></td><td style="text-align:center">60</td><td><input type="number" id="e_chozaigo_60_amt"></td></tr>
+        <tr><td class="label">かかりつけ薬剤師包括管理料（291点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_kakari_291_cnt"></td><td style="text-align:center">291</td><td><input type="number" id="e_kakari_291_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料1　月1回（30点）</td><td><input type="number" id="e_fuyaku_joho1_cnt"></td><td style="text-align:center">30</td><td><input type="number" id="e_fuyaku_joho1_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料2　月1回（20点）</td><td><input type="number" id="e_fuyaku_joho2_cnt"></td><td style="text-align:center">20</td><td><input type="number" id="e_fuyaku_joho2_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料3　3月1回（50点）</td><td><input type="number" id="e_fuyaku_joho3_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="e_fuyaku_joho3_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料1　月1回（185点）</td><td><input type="number" id="e_gaifuku1_cnt"></td><td style="text-align:center">185</td><td><input type="number" id="e_gaifuku1_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　1〜7日（34点）</td><td><input type="number" id="e_gaifuku2_7_cnt"></td><td style="text-align:center">34</td><td><input type="number" id="e_gaifuku2_7_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　8〜14日（68点）</td><td><input type="number" id="e_gaifuku2_14_cnt"></td><td style="text-align:center">68</td><td><input type="number" id="e_gaifuku2_14_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　15〜21日（102点）</td><td><input type="number" id="e_gaifuku2_21_cnt"></td><td style="text-align:center">102</td><td><input type="number" id="e_gaifuku2_21_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　22〜28日（136点）</td><td><input type="number" id="e_gaifuku2_28_cnt"></td><td style="text-align:center">136</td><td><input type="number" id="e_gaifuku2_28_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　29〜35日（170点）</td><td><input type="number" id="e_gaifuku2_35_cnt"></td><td style="text-align:center">170</td><td><input type="number" id="e_gaifuku2_35_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　36〜42日（204点）</td><td><input type="number" id="e_gaifuku2_42_cnt"></td><td style="text-align:center">204</td><td><input type="number" id="e_gaifuku2_42_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　43日以上（240点）</td><td><input type="number" id="e_gaifuku2_43_cnt"></td><td style="text-align:center">240</td><td><input type="number" id="e_gaifuku2_43_amt"></td></tr>
+        <tr><td class="label">施設連携加算　月1回（50点）</td><td><input type="number" id="e_setsurenkei_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="e_setsurenkei_amt"></td></tr>
+        <tr><td class="label">服用薬剤調整支援料1　月1回（125点）</td><td><input type="number" id="e_fukuyou1_cnt"></td><td style="text-align:center">125</td><td><input type="number" id="e_fukuyou1_amt"></td></tr>
+        <tr><td class="label">服用薬剤調整支援料2　3月1回</td><td></td><td></td><td><input type="number" id="e_fukuyou2_amt"></td></tr>
+        <tr><td class="label">経管投薬支援料</td><td></td><td></td><td><input type="number" id="e_keikan_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 薬学管理料合計</td><td></td><td></td><td><input type="number" id="e_yakugaku_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+    <div class="section">
+    <div class="section-title">在宅等</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（単一1人）（650点）</td><td><input type="number" id="e_zaitaku_1nin_cnt"></td><td style="text-align:center">650</td><td><input type="number" id="e_zaitaku_1nin_amt"></td></tr>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（2人以上9人以下）（320点）</td><td><input type="number" id="e_zaitaku_2_9_cnt"></td><td style="text-align:center">320</td><td><input type="number" id="e_zaitaku_2_9_amt"></td></tr>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（10人以上）（290点）</td><td><input type="number" id="e_zaitaku_10_cnt"></td><td style="text-align:center">290</td><td><input type="number" id="e_zaitaku_10_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急訪問薬剤管理指導料1（500点）</td><td><input type="number" id="e_zaitaku_kinkyu1_cnt"></td><td style="text-align:center">500</td><td><input type="number" id="e_zaitaku_kinkyu1_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急訪問薬剤管理指導料2（200点）</td><td><input type="number" id="e_zaitaku_kinkyu2_cnt"></td><td style="text-align:center">200</td><td><input type="number" id="e_zaitaku_kinkyu2_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急時等共同服薬指導料（700点）</td><td><input type="number" id="e_zaitaku_kyodo_cnt"></td><td style="text-align:center">700</td><td><input type="number" id="e_zaitaku_kyodo_amt"></td></tr>
+        <tr><td class="label">麻薬管理加算（在宅）（100点）</td><td><input type="number" id="e_zaitaku_mayaku_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="e_zaitaku_mayaku_amt"></td></tr>
+        <tr><td class="label">乳幼児加算（在宅）（100点）</td><td><input type="number" id="e_zaitaku_nyuyoji_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="e_zaitaku_nyuyoji_amt"></td></tr>
+        <tr><td class="label">小児特定加算（在宅）（450点）</td><td><input type="number" id="e_zaitaku_shoni_cnt"></td><td style="text-align:center">450</td><td><input type="number" id="e_zaitaku_shoni_amt"></td></tr>
+        <tr><td class="label">在宅患者医療用麻薬持続注射療法加算（250点）</td><td><input type="number" id="e_zaitaku_mayaku_chu_cnt"></td><td style="text-align:center">250</td><td><input type="number" id="e_zaitaku_mayaku_chu_amt"></td></tr>
+        <tr><td class="label">在宅中心静脈栄養法加算（150点）</td><td><input type="number" id="e_zaitaku_chushin_cnt"></td><td style="text-align:center">150</td><td><input type="number" id="e_zaitaku_chushin_amt"></td></tr>
+        <tr><td class="label">夜間訪問加算（400点）</td><td><input type="number" id="e_yakan_homon_cnt"></td><td style="text-align:center">400</td><td><input type="number" id="e_yakan_homon_amt"></td></tr>
+        <tr><td class="label">休日訪問加算（600点）</td><td><input type="number" id="e_kyujitsu_homon_cnt"></td><td style="text-align:center">600</td><td><input type="number" id="e_kyujitsu_homon_amt"></td></tr>
+        <tr><td class="label">深夜訪問加算（1000点）</td><td><input type="number" id="e_shinya_homon_cnt"></td><td style="text-align:center">1000</td><td><input type="number" id="e_shinya_homon_amt"></td></tr>
+        <tr><td class="label">在宅患者重複投薬・相互作用等防止管理料（残薬以外）（40点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_zaitaku_jukufuku_other_cnt"></td><td style="text-align:center">40</td><td><input type="number" id="e_zaitaku_jukufuku_other_amt"></td></tr>
+        <tr><td class="label">在宅患者重複投薬・相互作用等防止管理料（残薬）（20点）<span class="badge-r8 haishi">R8廃止</span></td><td><input type="number" id="e_zaitaku_jukufuku_zan_cnt"></td><td style="text-align:center">20</td><td><input type="number" id="e_zaitaku_jukufuku_zan_amt"></td></tr>
+        <tr><td class="label">退院時共同指導料（600点）</td><td><input type="number" id="e_taiin_kyodo_cnt"></td><td style="text-align:center">600</td><td><input type="number" id="e_taiin_kyodo_amt"></td></tr>
+        <tr><td class="label">在宅移行初期管理料（230点）</td><td><input type="number" id="e_zaitaku_iko_cnt"></td><td style="text-align:center">230</td><td><input type="number" id="e_zaitaku_iko_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 在宅等合計</td><td></td><td></td><td><input type="number" id="e_zaitaku_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">介護（居宅療養管理指導費）</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　単一建物1人（518単位）</td><td><input type="number" id="e_kaigo1_cnt"></td><td style="text-align:center">518</td><td><input type="number" id="e_kaigo1_amt"></td></tr>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　単一建物2〜9人（379単位）</td><td><input type="number" id="e_kaigo2_cnt"></td><td style="text-align:center">379</td><td><input type="number" id="e_kaigo2_amt"></td></tr>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　10人以上（342単位）</td><td><input type="number" id="e_kaigo3_cnt"></td><td style="text-align:center">342</td><td><input type="number" id="e_kaigo3_amt"></td></tr>
+        <tr><td class="label">情報通信機器を用いて行う場合（46単位）</td><td><input type="number" id="e_kaigo4_cnt"></td><td style="text-align:center">46</td><td><input type="number" id="e_kaigo4_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　単一建物1人（518単位）</td><td><input type="number" id="e_kaigo_y1_cnt"></td><td style="text-align:center">518</td><td><input type="number" id="e_kaigo_y1_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　2〜9人（379単位）</td><td><input type="number" id="e_kaigo_y2_cnt"></td><td style="text-align:center">379</td><td><input type="number" id="e_kaigo_y2_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　10人以上（342単位）</td><td><input type="number" id="e_kaigo_y3_cnt"></td><td style="text-align:center">342</td><td><input type="number" id="e_kaigo_y3_amt"></td></tr>
+        <tr><td class="label">医療用麻薬持続注射療法加算（250単位）</td><td><input type="number" id="e_kaigo_mayaku_cnt"></td><td style="text-align:center">250</td><td><input type="number" id="e_kaigo_mayaku_amt"></td></tr>
+        <tr><td class="label">在宅中心静脈栄養法加算（150単位）</td><td><input type="number" id="e_kaigo_chushin_cnt"></td><td style="text-align:center">150</td><td><input type="number" id="e_kaigo_chushin_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 介護合計</td><td></td><td></td><td><input type="number" id="e_kaigo_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+    <div class="section">
+    <div class="section-title">保険外収入</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:220px">項目</th><th>金額（円）</th><th style="width:300px">備考</th></tr></thead>
+      <tbody>
+        <tr><td class="label">保険分・患者負担金額</td><td><input type="number" id="e_hoken_futan2"></td><td><input type="text" placeholder="保険適用処方の患者窓口負担額"></td></tr>
+        <tr><td class="label">自費分・患者負担金額</td><td><input type="number" id="e_jhi_chozai_amt"></td><td><input type="text" id="e_jhi_chozai_note" placeholder="保険適用外処方の全額患者負担"></td></tr>
+        <tr><td class="label">保険外・患者負担金額</td><td><input type="number" id="e_hokengai_amt"></td><td><input type="text" placeholder="保険外収入の合計（下記3項目の合計）"></td></tr>
+        <tr><td class="label" style="padding-left:2em">その他金額</td><td><input type="number" id="e_bussan_amt"></td><td><input type="text" id="e_bussan_note" placeholder="衛生材料・健康食品等の物販"></td></tr>
+        <tr><td class="label" style="padding-left:2em">OTC金額</td><td><input type="number" id="e_otc_amt"></td><td><input type="text" id="e_otc_note" placeholder="市販薬・OTC売上"></td></tr>
+        <tr><td class="label" style="padding-left:2em">選定療養金額</td><td><input type="number" id="e_sentei_amt"></td><td><input type="text" id="e_sentei_note" placeholder="先発品との差額（患者負担）"></td></tr>
+        <tr class="total"><td class="label">◆ 保険外合計</td><td><input type="number" id="e_hokengai_total"></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="text-align:center;margin-top:16px">
+    <button class="btn btn-primary" onclick="saveEntry()" style="padding:10px 32px;font-size:14px">💾 保存する</button>
+  </div>
+</div>
+
+</div><!-- /page-input -->
+
+<div id="page-r8" class="page">
+<div class="section">
+    <div class="section-title" style="display:flex;align-items:center;gap:12px">
+      令和8年度（2026年6月〜）調剤報酬改定
+    </div>
+  </div>
+
+  <div class="sub-tabs">
+    <div class="sub-tab active" onclick="showSubTab('r8-sim',this)">シミュレーター</div>
+    <div class="sub-tab" onclick="showSubTab('r8-tasks',this)">事務タスク</div>
+  </div>
+
+  <div id="r8-sim" class="sub-pane active">
+
+  <div class="section">
+    <div class="section-title">R7→R8 売上予測</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+      <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:var(--text2)">R7 年間売上（実績）</div>
+        <div id="r8sum-r7" style="font-size:20px;font-weight:700;margin:6px 0">-</div>
+        <div style="font-size:11px;color:var(--text2)">円</div>
+      </div>
+      <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:var(--text2)">R8 年間売上（予測）</div>
+        <div id="r8sum-r8" style="font-size:20px;font-weight:700;margin:6px 0">-</div>
+        <div style="font-size:11px;color:var(--text2)">円</div>
+      </div>
+      <div style="background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:var(--text2)">増減額（増減率）</div>
+        <div id="r8sum-diff" style="font-size:20px;font-weight:700;margin:6px 0">-</div>
+        <div id="r8sum-pct" style="font-size:13px;font-weight:700">-</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+      <div style="background:#e3f2fd;border:1.5px solid #90caf9;border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:#1565c0">技術料 増減</div>
+        <div id="r8sum-gijutsu" style="font-size:18px;font-weight:700;color:#1565c0;margin:6px 0">-</div>
+        <div style="font-size:10px;color:#1565c0">点数変更＋新設加算−廃止加算</div>
+      </div>
+      <div style="background:#ffebee;border:1.5px solid #ef9a9a;border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:#c62828">薬価改定 影響</div>
+        <div id="r8sum-yakka" style="font-size:18px;font-weight:700;color:#c62828;margin:6px 0">-</div>
+        <div id="r8sum-yakka-note" style="font-size:10px;color:#c62828">薬剤費ベース▲4.02%（R8.4月〜）</div>
+      </div>
+      <div style="background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;color:#2e7d32">物価・賃上げ対応</div>
+        <div id="r8sum-bukka" style="font-size:18px;font-weight:700;color:#2e7d32;margin:6px 0">-</div>
+        <div style="font-size:10px;color:#2e7d32">調剤物価対応料＋ベースアップ評価料</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <label style="font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="r8-yakka-check" checked onchange="calcR8Forecast()">
+        薬価▲<input type="number" id="r8-yakka-rate" value="4.02" step="0.01" min="0" max="20" style="width:60px;font-size:13px;padding:2px 4px;border:1px solid var(--border);border-radius:4px" onchange="calcR8Forecast()">%を反映
+      </label>
+      <button class="btn btn-secondary" onclick="calcR8Forecast()" style="font-size:12px;padding:4px 16px">再計算</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">実績入力（R7.5〜R8.4）</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="fillR8Jisseki()">実績を入力</button>
+      <label style="font-size:13px;cursor:pointer"><input type="checkbox" id="r8-extrapolate" checked> 不足期間を予測加算する</label>
+      <label style="font-size:13px;cursor:pointer"><input type="checkbox" id="r8-skip-youken" checked> 要件指定があるものは加算しない</label>
+    </div>
+    <div id="r8-status" style="font-size:13px;color:var(--text2);min-height:20px"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">基本指標</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:260px">項目</th><th>当月値</th><th style="width:60px">単位</th></tr></thead>
+      <tbody>
+        <tr><td class="label">処方箋受付回数</td><td><input type="number" id="r8_rx_count"></td><td class="label" style="text-align:center">回</td></tr>
+        <tr><td class="label">処方箋受付枚数</td><td><input type="number" id="r8_rx_sheets"></td><td class="label" style="text-align:center">枚</td></tr>
+        <tr><td class="label">後発調剤率</td><td><input type="number" id="r8_ge_rate" step="0.01"></td><td class="label" style="text-align:center">%</td></tr>
+        <tr><td class="label">剤数</td><td><input type="number" id="r8_zai_count"></td><td class="label" style="text-align:center">剤</td></tr>
+        <tr><td class="label">平均剤数</td><td><input type="number" id="r8_avg_zai" step="0.01"></td><td class="label" style="text-align:center">剤</td></tr>
+        <tr><td class="label">処方箋報酬金額</td><td><input type="number" id="r8_total_reward"></td><td class="label" style="text-align:center">円</td></tr>
+        <tr><td class="label">処方箋単価</td><td><input type="number" id="r8_rx_price" step="0.01"></td><td class="label" style="text-align:center">円</td></tr>
+        <tr><td class="label">手帳活用実績（持参率）</td><td><input type="number" id="r8_techo_rate" step="0.01"></td><td class="label" style="text-align:center">%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">調剤基本料・体制加算</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:260px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">調剤基本料 <span class="badge-r8 henkou">変更</span></td>
+          <td><input type="number" id="r8_kihon45_cnt"></td>
+          <td><select id="r8_kihon45_pt">
+            <option value="47">基本料1（47点）</option><option value="30">基本料2（30点）</option>
+            <option value="25">基本料3イ（25点）</option><option value="20">基本料3ロ（20点）</option>
+            <option value="37">基本料3ハ（37点）</option><option value="7">特別A（7点）</option>
+            <option value="5">特別B（5点）</option>
+          </select></td>
+          <td><input type="number" id="r8_kihon45_amt"></td></tr>
+        <tr><td class="label">地域支援・医薬品供給対応体制加算 <span class="badge-r8 tougo">統合</span></td>
+          <td><input type="number" id="r8_chiiki_cnt"></td>
+          <td><select id="r8_chiiki_pt">
+            <option value="0">算定なし</option><option value="27">加算1（27点）</option>
+            <option value="59">加算2（59点）</option><option value="67">加算3（67点）</option>
+            <option value="37">加算4（37点）</option>
+          </select></td>
+          <td><input type="number" id="r8_chiiki_amt"></td></tr>
+        <tr><td class="label">連携強化加算（5点）</td><td><input type="number" id="r8_renkei_cnt"></td><td><input type="number" id="r8_renkei_pt" value="5"></td><td><input type="number" id="r8_renkei_amt"></td></tr>
+        <tr><td class="label">電子的調剤情報連携体制整備加算（7点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_dx8_cnt"></td><td><input type="number" id="r8_dx8_pt" value="7"></td><td><input type="number" id="r8_dx8_amt"></td></tr>
+        <tr><td class="label">電子的調剤情報連携体制整備加算（6点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_dx10_cnt"></td><td><input type="number" id="r8_dx10_pt" value="6"></td><td><input type="number" id="r8_dx10_amt"></td></tr>
+        <tr><td class="label">在宅薬学総合体制加算<span class="badge-r8 henkou">変更</span></td>
+          <td><input type="number" id="r8_zaitaku15_cnt"></td>
+          <td><select id="r8_zaitaku15_pt">
+            <option value="0">算定なし</option><option value="30">加算1（30点）</option>
+            <option value="100">加算2イ（100点）</option><option value="50">加算2ロ（50点）</option>
+          </select></td>
+          <td><input type="number" id="r8_zaitaku15_amt"></td></tr>
+        <tr><td class="label">夜間・休日等加算（40点）</td><td><input type="number" id="r8_yakan_cnt"></td><td><input type="number" id="r8_yakan_pt" value="40"></td><td><input type="number" id="r8_yakan_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">調剤物価対応料（1点）3月に1回 <span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_bukka_cnt"></td><td style="text-align:center">1</td><td><input type="number" id="r8_bukka_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">調剤ベースアップ評価料（4点→R9:8点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_baseup_cnt"></td><td style="text-align:center">4</td><td><input type="number" id="r8_baseup_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">バイオ後続品調剤体制加算（50点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_bio_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="r8_bio_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 調剤基本料合計</td><td></td><td></td><td><input type="number" id="r8_kihon_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬剤調製料</div>
+    <table class="entry-tbl">
+      <thead><tr>
+        <th style="text-align:left;width:60px">剤種</th>
+        <th>算定単位</th>
+        <th>剤数</th>
+        <th>薬剤料（円）</th>
+        <th>件数</th>
+        <th>点数</th>
+        <th>金額（円）</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="label">内服</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1剤につき（3剤まで）</td>
+          <td><input type="number" id="r8_naifuku_zai"></td>
+          <td><input type="number" id="r8_naifuku_yakuzai"></td>
+          <td><input type="number" id="r8_naifuku_cnt"></td>
+          <td style="text-align:center">24</td>
+          <td><input type="number" id="r8_naifuku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">浸煎</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき、3調剤まで</td>
+          <td><input type="number" id="r8_sinsenn_zai"></td>
+          <td><input type="number" id="r8_sinsenn_yakuzai"></td>
+          <td><input type="number" id="r8_sinsenn_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="r8_sinsenn_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">湯薬</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき、3調剤まで</td>
+          <td><input type="number" id="r8_yuyaku_zai"></td>
+          <td><input type="number" id="r8_yuyaku_yakuzai"></td>
+          <td><input type="number" id="r8_yuyaku_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="r8_yuyaku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">屯服</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">処方箋受付1回につき</td>
+          <td><input type="number" id="r8_tonpuku_zai"></td>
+          <td><input type="number" id="r8_tonpuku_yakuzai"></td>
+          <td><input type="number" id="r8_tonpuku_cnt"></td>
+          <td style="text-align:center">21</td>
+          <td><input type="number" id="r8_tonpuku_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">外用</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき（3調剤まで）</td>
+          <td><input type="number" id="r8_gaiyou_zai"></td>
+          <td><input type="number" id="r8_gaiyou_yakuzai"></td>
+          <td><input type="number" id="r8_gaiyou_cnt"></td>
+          <td style="text-align:center">10</td>
+          <td><input type="number" id="r8_gaiyou_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">注射</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1処方箋につき</td>
+          <td><input type="number" id="r8_chusya_zai"></td>
+          <td><input type="number" id="r8_chusya_yakuzai"></td>
+          <td><input type="number" id="r8_chusya_cnt"></td>
+          <td style="text-align:center">26</td>
+          <td><input type="number" id="r8_chusya_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">内滴</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center">1調剤につき</td>
+          <td><input type="number" id="r8_naiteki_zai"></td>
+          <td><input type="number" id="r8_naiteki_yakuzai"></td>
+          <td><input type="number" id="r8_naiteki_cnt"></td>
+          <td style="text-align:center">10</td>
+          <td><input type="number" id="r8_naiteki_amt"></td>
+        </tr>
+        <tr>
+          <td class="label">材料</td>
+          <td style="color:var(--text-muted);font-size:11px;text-align:center"></td>
+          <td><input type="number" id="r8_zairyo_zai"></td>
+          <td><input type="number" id="r8_zairyo_yakuzai"></td>
+          <td><input type="number" id="r8_zairyo_cnt"></td>
+          <td style="text-align:center;color:var(--text-muted)">※</td>
+          <td><input type="number" id="r8_zairyo_amt"></td>
+        </tr>
+        <tr class="total">
+          <td class="label">◆ 合計</td>
+          <td></td><td></td><td></td>
+          <td><input type="number" id="r8_chozai_cnt_total"></td>
+          <td></td>
+          <td><input type="number" id="r8_chozai_total"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬剤調製料加算（円）</div>
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" style="min-width:900px;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;width:60px">剤種</th>
+        <th>麻薬</th><th>毒薬</th><th>覚醒剤</th><th>向精神</th>
+        <th>計量</th><th>計量予</th><th>自家</th><th>自家予</th>
+        <th>無菌<br></th><th>時間外</th><th>加算合計</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="label">内服</td>
+          <td><input type="number" id="r8_kaz_nai_mayaku"></td>
+          <td><input type="number" id="r8_kaz_nai_doku"></td>
+          <td><input type="number" id="r8_kaz_nai_kakusei"></td>
+          <td><input type="number" id="r8_kaz_nai_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_nai_keiryo"></td>
+          <td><input type="number" id="r8_kaz_nai_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_nai_jika"></td>
+          <td><input type="number" id="r8_kaz_nai_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_nai_mukin"></td>
+          <td><input type="number" id="r8_kaz_nai_jikou"></td>
+          <td><input type="number" id="r8_kaz_nai_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">浸煎</td>
+          <td><input type="number" id="r8_kaz_sin_mayaku"></td>
+          <td><input type="number" id="r8_kaz_sin_doku"></td>
+          <td><input type="number" id="r8_kaz_sin_kakusei"></td>
+          <td><input type="number" id="r8_kaz_sin_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_sin_keiryo"></td>
+          <td><input type="number" id="r8_kaz_sin_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_sin_jika"></td>
+          <td><input type="number" id="r8_kaz_sin_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_sin_mukin"></td>
+          <td><input type="number" id="r8_kaz_sin_jikou"></td>
+          <td><input type="number" id="r8_kaz_sin_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">湯薬</td>
+          <td><input type="number" id="r8_kaz_yu_mayaku"></td>
+          <td><input type="number" id="r8_kaz_yu_doku"></td>
+          <td><input type="number" id="r8_kaz_yu_kakusei"></td>
+          <td><input type="number" id="r8_kaz_yu_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_yu_keiryo"></td>
+          <td><input type="number" id="r8_kaz_yu_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_yu_jika"></td>
+          <td><input type="number" id="r8_kaz_yu_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_yu_mukin"></td>
+          <td><input type="number" id="r8_kaz_yu_jikou"></td>
+          <td><input type="number" id="r8_kaz_yu_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">屯服</td>
+          <td><input type="number" id="r8_kaz_ton_mayaku"></td>
+          <td><input type="number" id="r8_kaz_ton_doku"></td>
+          <td><input type="number" id="r8_kaz_ton_kakusei"></td>
+          <td><input type="number" id="r8_kaz_ton_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_ton_keiryo"></td>
+          <td><input type="number" id="r8_kaz_ton_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_ton_jika"></td>
+          <td><input type="number" id="r8_kaz_ton_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_ton_mukin"></td>
+          <td><input type="number" id="r8_kaz_ton_jikou"></td>
+          <td><input type="number" id="r8_kaz_ton_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">外用</td>
+          <td><input type="number" id="r8_kaz_gai_mayaku"></td>
+          <td><input type="number" id="r8_kaz_gai_doku"></td>
+          <td><input type="number" id="r8_kaz_gai_kakusei"></td>
+          <td><input type="number" id="r8_kaz_gai_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_gai_keiryo"></td>
+          <td><input type="number" id="r8_kaz_gai_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_gai_jika"></td>
+          <td><input type="number" id="r8_kaz_gai_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_gai_mukin"></td>
+          <td><input type="number" id="r8_kaz_gai_jikou"></td>
+          <td><input type="number" id="r8_kaz_gai_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">注射</td>
+          <td><input type="number" id="r8_kaz_chu_mayaku"></td>
+          <td><input type="number" id="r8_kaz_chu_doku"></td>
+          <td><input type="number" id="r8_kaz_chu_kakusei"></td>
+          <td><input type="number" id="r8_kaz_chu_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_chu_keiryo"></td>
+          <td><input type="number" id="r8_kaz_chu_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_chu_jika"></td>
+          <td><input type="number" id="r8_kaz_chu_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_chu_mukin"></td>
+          <td><input type="number" id="r8_kaz_chu_jikou"></td>
+          <td><input type="number" id="r8_kaz_chu_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">内滴</td>
+          <td><input type="number" id="r8_kaz_nai2_mayaku"></td>
+          <td><input type="number" id="r8_kaz_nai2_doku"></td>
+          <td><input type="number" id="r8_kaz_nai2_kakusei"></td>
+          <td><input type="number" id="r8_kaz_nai2_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_nai2_keiryo"></td>
+          <td><input type="number" id="r8_kaz_nai2_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_nai2_jika"></td>
+          <td><input type="number" id="r8_kaz_nai2_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_nai2_mukin"></td>
+          <td><input type="number" id="r8_kaz_nai2_jikou"></td>
+          <td><input type="number" id="r8_kaz_nai2_total" style="font-weight:600"></td>
+        </tr>
+        <tr><td class="label">材料</td>
+          <td><input type="number" id="r8_kaz_mat_mayaku"></td>
+          <td><input type="number" id="r8_kaz_mat_doku"></td>
+          <td><input type="number" id="r8_kaz_mat_kakusei"></td>
+          <td><input type="number" id="r8_kaz_mat_mukyoko"></td>
+          <td><input type="number" id="r8_kaz_mat_keiryo"></td>
+          <td><input type="number" id="r8_kaz_mat_keiryo_yo"></td>
+          <td><input type="number" id="r8_kaz_mat_jika"></td>
+          <td><input type="number" id="r8_kaz_mat_jika_yo"></td>
+          <td><input type="number" id="r8_kaz_mat_mukin"></td>
+          <td><input type="number" id="r8_kaz_mat_jikou"></td>
+          <td><input type="number" id="r8_kaz_mat_total" style="font-weight:600"></td>
+        </tr>
+        <tr class="total"><td class="label">合計</td>
+          <td><input type="number" id="r8_kaz_col_mayaku" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_doku" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_kakusei" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_mukyoko" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_keiryo" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_keiryo_yo" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_jika" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_jika_yo" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_mukin" style="font-weight:600"></td>
+          <td><input type="number" id="r8_kaz_col_jikou" style="font-weight:600"></td>
+          <td><input type="number" id="r8_chozai_kazan_total" style="font-weight:700;color:var(--purple)"></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">薬学管理料</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">調剤管理料（内服）<span class="badge-r8 henkou">変更</span></td><td></td><td></td><td><input type="number" id="r8_chmgr_nai_amt"></td></tr>
+        <tr><td class="label">　イ）27日分以下（10点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_chmgr_7_cnt"></td><td style="text-align:center">10</td><td><input type="number" id="r8_chmgr_7_amt"></td></tr>
+        <tr><td class="label">　ロ）28日分以上（60点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_chmgr_29_cnt"></td><td style="text-align:center">60</td><td><input type="number" id="r8_chmgr_29_amt"></td></tr>
+        <tr><td class="label">調剤管理料（内服以外）（4点）</td><td><input type="number" id="r8_chmgr_other_cnt"></td><td style="text-align:center">4</td><td><input type="number" id="r8_chmgr_other_amt"></td></tr>
+        <tr><td class="label">時間外加算（調剤管理料）</td><td></td><td></td><td><input type="number" id="r8_jikangai_kanri_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料1イ かかりつけ薬剤師（45点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_fuyaku_a_cnt"></td><td style="text-align:center">45</td><td><input type="number" id="r8_fuyaku_a_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料1ロ その他（45点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_fuyaku_b_cnt"></td><td style="text-align:center">45</td><td><input type="number" id="r8_fuyaku_b_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料2イ かかりつけ薬剤師（59点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_fuyaku_c_cnt"></td><td style="text-align:center">59</td><td><input type="number" id="r8_fuyaku_c_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料2ロ その他（59点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_fuyaku_3_cnt"></td><td style="text-align:center">59</td><td><input type="number" id="r8_fuyaku_3_amt"></td></tr>
+        <tr><td class="label">服薬管理指導料3 特養入居者（45点）<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_fuyaku_toku2a_cnt"></td><td style="text-align:center">45</td><td><input type="number" id="r8_fuyaku_toku2a_amt"></td></tr>
+        <tr><td class="label">麻薬管理指導加算（70点）</td><td><input type="number" id="r8_mayaku_shido_cnt"></td><td style="text-align:center">70</td><td><input type="number" id="r8_mayaku_shido_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算1（イ）ハイリスク新規（10点）</td><td><input type="number" id="r8_tokutei_1i_cnt"></td><td style="text-align:center">10</td><td><input type="number" id="r8_tokutei_1i_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算1（ロ）変化時（5点）</td><td><input type="number" id="r8_tokutei_1ro_cnt"></td><td style="text-align:center">5</td><td><input type="number" id="r8_tokutei_1ro_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算2　抗悪性腫瘍剤（100点）</td><td><input type="number" id="r8_tokutei_2_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="r8_tokutei_2_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算3（イ）RMP（5点）</td><td><input type="number" id="r8_tokutei_3i_cnt"></td><td style="text-align:center">5</td><td><input type="number" id="r8_tokutei_3i_amt"></td></tr>
+        <tr><td class="label">特定薬剤管理指導加算3（ロ）選定療養・銘柄変更（10点）</td><td><input type="number" id="r8_tokutei_3ro_cnt"></td><td style="text-align:center">10</td><td><input type="number" id="r8_tokutei_3ro_amt"></td></tr>
+        <tr><td class="label">乳幼児服薬指導加算（12点）</td><td><input type="number" id="r8_nyuyoji_12_cnt"></td><td style="text-align:center">12</td><td><input type="number" id="r8_nyuyoji_12_amt"></td></tr>
+        <tr><td class="label">小児特定加算（350点）</td><td><input type="number" id="r8_shoni_350_cnt"></td><td style="text-align:center">350</td><td><input type="number" id="r8_shoni_350_amt"></td></tr>
+        <tr><td class="label">吸入薬指導加算（30点）6月に1回<span class="badge-r8 henkou">変更</span></td><td><input type="number" id="r8_kyunyu_30_cnt"></td><td style="text-align:center">30</td><td><input type="number" id="r8_kyunyu_30_amt"></td></tr>
+        <tr><td class="label">調剤後薬剤管理指導料（60点）</td><td><input type="number" id="r8_chozaigo_60_cnt"></td><td style="text-align:center">60</td><td><input type="number" id="r8_chozaigo_60_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料1　月1回（30点）</td><td><input type="number" id="r8_fuyaku_joho1_cnt"></td><td style="text-align:center">30</td><td><input type="number" id="r8_fuyaku_joho1_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料2　月1回（20点）</td><td><input type="number" id="r8_fuyaku_joho2_cnt"></td><td style="text-align:center">20</td><td><input type="number" id="r8_fuyaku_joho2_amt"></td></tr>
+        <tr><td class="label">服薬情報等提供料3　3月1回（50点）</td><td><input type="number" id="r8_fuyaku_joho3_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="r8_fuyaku_joho3_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料1　月1回（185点）</td><td><input type="number" id="r8_gaifuku1_cnt"></td><td style="text-align:center">185</td><td><input type="number" id="r8_gaifuku1_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　1〜7日（34点）</td><td><input type="number" id="r8_gaifuku2_7_cnt"></td><td style="text-align:center">34</td><td><input type="number" id="r8_gaifuku2_7_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　8〜14日（68点）</td><td><input type="number" id="r8_gaifuku2_14_cnt"></td><td style="text-align:center">68</td><td><input type="number" id="r8_gaifuku2_14_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　15〜21日（102点）</td><td><input type="number" id="r8_gaifuku2_21_cnt"></td><td style="text-align:center">102</td><td><input type="number" id="r8_gaifuku2_21_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　22〜28日（136点）</td><td><input type="number" id="r8_gaifuku2_28_cnt"></td><td style="text-align:center">136</td><td><input type="number" id="r8_gaifuku2_28_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　29〜35日（170点）</td><td><input type="number" id="r8_gaifuku2_35_cnt"></td><td style="text-align:center">170</td><td><input type="number" id="r8_gaifuku2_35_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　36〜42日（204点）</td><td><input type="number" id="r8_gaifuku2_42_cnt"></td><td style="text-align:center">204</td><td><input type="number" id="r8_gaifuku2_42_amt"></td></tr>
+        <tr><td class="label">外来服薬支援料2　43日以上（240点）</td><td><input type="number" id="r8_gaifuku2_43_cnt"></td><td style="text-align:center">240</td><td><input type="number" id="r8_gaifuku2_43_amt"></td></tr>
+        <tr><td class="label">施設連携加算　月1回（50点）</td><td><input type="number" id="r8_setsurenkei_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="r8_setsurenkei_amt"></td></tr>
+        <tr><td class="label">服用薬剤調整支援料1　月1回（125点）</td><td><input type="number" id="r8_fukuyou1_cnt"></td><td style="text-align:center">125</td><td><input type="number" id="r8_fukuyou1_amt"></td></tr>
+        <tr><td class="label">服用薬剤調整支援料2　3月1回</td><td></td><td></td><td><input type="number" id="r8_fukuyou2_amt"></td></tr>
+        <tr><td class="label">経管投薬支援料</td><td></td><td></td><td><input type="number" id="r8_keikan_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">調剤時残薬調整加算（30〜50点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_zanryaku_cnt"></td><td style="text-align:center">30〜50</td><td><input type="number" id="r8_zanryaku_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">薬学的有害事象等防止加算（30〜50点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_yugai_cnt"></td><td style="text-align:center">30〜50</td><td><input type="number" id="r8_yugai_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">かかりつけ薬剤師フォローアップ加算（50点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_kakari_fu_cnt"></td><td style="text-align:center">50</td><td><input type="number" id="r8_kakari_fu_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 薬学管理料合計</td><td></td><td></td><td><input type="number" id="r8_yakugaku_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+    <div class="section">
+    <div class="section-title">在宅等</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（単一1人）（650点）</td><td><input type="number" id="r8_zaitaku_1nin_cnt"></td><td style="text-align:center">650</td><td><input type="number" id="r8_zaitaku_1nin_amt"></td></tr>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（2人以上9人以下）（320点）</td><td><input type="number" id="r8_zaitaku_2_9_cnt"></td><td style="text-align:center">320</td><td><input type="number" id="r8_zaitaku_2_9_amt"></td></tr>
+        <tr><td class="label">在宅患者訪問薬剤管理指導料（10人以上）（290点）</td><td><input type="number" id="r8_zaitaku_10_cnt"></td><td style="text-align:center">290</td><td><input type="number" id="r8_zaitaku_10_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急訪問薬剤管理指導料1（500点）</td><td><input type="number" id="r8_zaitaku_kinkyu1_cnt"></td><td style="text-align:center">500</td><td><input type="number" id="r8_zaitaku_kinkyu1_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急訪問薬剤管理指導料2（200点）</td><td><input type="number" id="r8_zaitaku_kinkyu2_cnt"></td><td style="text-align:center">200</td><td><input type="number" id="r8_zaitaku_kinkyu2_amt"></td></tr>
+        <tr><td class="label">在宅患者緊急時等共同服薬指導料（700点）</td><td><input type="number" id="r8_zaitaku_kyodo_cnt"></td><td style="text-align:center">700</td><td><input type="number" id="r8_zaitaku_kyodo_amt"></td></tr>
+        <tr><td class="label">麻薬管理加算（在宅）（100点）</td><td><input type="number" id="r8_zaitaku_mayaku_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="r8_zaitaku_mayaku_amt"></td></tr>
+        <tr><td class="label">乳幼児加算（在宅）（100点）</td><td><input type="number" id="r8_zaitaku_nyuyoji_cnt"></td><td style="text-align:center">100</td><td><input type="number" id="r8_zaitaku_nyuyoji_amt"></td></tr>
+        <tr><td class="label">小児特定加算（在宅）（450点）</td><td><input type="number" id="r8_zaitaku_shoni_cnt"></td><td style="text-align:center">450</td><td><input type="number" id="r8_zaitaku_shoni_amt"></td></tr>
+        <tr><td class="label">在宅患者医療用麻薬持続注射療法加算（250点）</td><td><input type="number" id="r8_zaitaku_mayaku_chu_cnt"></td><td style="text-align:center">250</td><td><input type="number" id="r8_zaitaku_mayaku_chu_amt"></td></tr>
+        <tr><td class="label">在宅中心静脈栄養法加算（150点）</td><td><input type="number" id="r8_zaitaku_chushin_cnt"></td><td style="text-align:center">150</td><td><input type="number" id="r8_zaitaku_chushin_amt"></td></tr>
+        <tr><td class="label">夜間訪問加算（400点）</td><td><input type="number" id="r8_yakan_homon_cnt"></td><td style="text-align:center">400</td><td><input type="number" id="r8_yakan_homon_amt"></td></tr>
+        <tr><td class="label">休日訪問加算（600点）</td><td><input type="number" id="r8_kyujitsu_homon_cnt"></td><td style="text-align:center">600</td><td><input type="number" id="r8_kyujitsu_homon_amt"></td></tr>
+        <tr><td class="label">深夜訪問加算（1000点）</td><td><input type="number" id="r8_shinya_homon_cnt"></td><td style="text-align:center">1000</td><td><input type="number" id="r8_shinya_homon_amt"></td></tr>
+        <tr><td class="label">退院時共同指導料（600点）</td><td><input type="number" id="r8_taiin_kyodo_cnt"></td><td style="text-align:center">600</td><td><input type="number" id="r8_taiin_kyodo_amt"></td></tr>
+        <tr><td class="label">在宅移行初期管理料（230点）</td><td><input type="number" id="r8_zaitaku_iko_cnt"></td><td style="text-align:center">230</td><td><input type="number" id="r8_zaitaku_iko_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">かかりつけ薬剤師訪問加算（230点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_kakari_homon_cnt"></td><td style="text-align:center">230</td><td><input type="number" id="r8_kakari_homon_amt"></td></tr>
+        <tr style="background:#e8f5e9"><td class="label" style="font-weight:bold">複数名薬剤管理指導訪問料（300点）<span style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:inline-block;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:bold">新設</span></td><td><input type="number" id="r8_fukusuu_cnt"></td><td style="text-align:center">300</td><td><input type="number" id="r8_fukusuu_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 在宅等合計</td><td></td><td></td><td><input type="number" id="r8_zaitaku_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">介護（居宅療養管理指導費）</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:300px">項目</th><th>件数</th><th>点数</th><th>金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　単一建物1人（518単位）</td><td><input type="number" id="r8_kaigo1_cnt"></td><td style="text-align:center">518</td><td><input type="number" id="r8_kaigo1_amt"></td></tr>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　単一建物2〜9人（379単位）</td><td><input type="number" id="r8_kaigo2_cnt"></td><td style="text-align:center">379</td><td><input type="number" id="r8_kaigo2_amt"></td></tr>
+        <tr><td class="label">薬剤師居宅療養管理指導費ⅡI　10人以上（342単位）</td><td><input type="number" id="r8_kaigo3_cnt"></td><td style="text-align:center">342</td><td><input type="number" id="r8_kaigo3_amt"></td></tr>
+        <tr><td class="label">情報通信機器を用いて行う場合（46単位）</td><td><input type="number" id="r8_kaigo4_cnt"></td><td style="text-align:center">46</td><td><input type="number" id="r8_kaigo4_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　単一建物1人（518単位）</td><td><input type="number" id="r8_kaigo_y1_cnt"></td><td style="text-align:center">518</td><td><input type="number" id="r8_kaigo_y1_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　2〜9人（379単位）</td><td><input type="number" id="r8_kaigo_y2_cnt"></td><td style="text-align:center">379</td><td><input type="number" id="r8_kaigo_y2_amt"></td></tr>
+        <tr><td class="label">予防薬剤師居宅療養管理指導費ⅡI　10人以上（342単位）</td><td><input type="number" id="r8_kaigo_y3_cnt"></td><td style="text-align:center">342</td><td><input type="number" id="r8_kaigo_y3_amt"></td></tr>
+        <tr><td class="label">医療用麻薬持続注射療法加算（250単位）</td><td><input type="number" id="r8_kaigo_mayaku_cnt"></td><td style="text-align:center">250</td><td><input type="number" id="r8_kaigo_mayaku_amt"></td></tr>
+        <tr><td class="label">在宅中心静脈栄養法加算（150単位）</td><td><input type="number" id="r8_kaigo_chushin_cnt"></td><td style="text-align:center">150</td><td><input type="number" id="r8_kaigo_chushin_amt"></td></tr>
+        <tr class="total"><td class="label">◆ 介護合計</td><td></td><td></td><td><input type="number" id="r8_kaigo_total"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+    <div class="section">
+    <div class="section-title">保険外収入</div>
+    <table class="entry-tbl">
+      <thead><tr><th style="text-align:left;width:220px">項目</th><th>金額（円）</th><th style="width:300px">備考</th></tr></thead>
+      <tbody>
+        <tr><td class="label">保険分・患者負担金額</td><td><input type="number" id="r8_hoken_futan2"></td><td><input type="text" placeholder="保険適用処方の患者窓口負担額"></td></tr>
+        <tr><td class="label">自費分・患者負担金額</td><td><input type="number" id="r8_jhi_chozai_amt"></td><td><input type="text" id="r8_jhi_chozai_note" placeholder="保険適用外処方の全額患者負担"></td></tr>
+        <tr><td class="label">保険外・患者負担金額</td><td><input type="number" id="r8_hokengai_amt"></td><td><input type="text" placeholder="保険外収入の合計（下記3項目の合計）"></td></tr>
+        <tr><td class="label" style="padding-left:2em">その他金額</td><td><input type="number" id="r8_bussan_amt"></td><td><input type="text" id="r8_bussan_note" placeholder="衛生材料・健康食品等の物販"></td></tr>
+        <tr><td class="label" style="padding-left:2em">OTC金額</td><td><input type="number" id="r8_otc_amt"></td><td><input type="text" id="r8_otc_note" placeholder="市販薬・OTC売上"></td></tr>
+        <tr><td class="label" style="padding-left:2em">選定療養金額</td><td><input type="number" id="r8_sentei_amt"></td><td><input type="text" id="r8_sentei_note" placeholder="先発品との差額（患者負担）"></td></tr>
+        <tr class="total"><td class="label">◆ 保険外合計</td><td><input type="number" id="r8_hokengai_total"></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  </div><!-- /r8-sim -->
+
+  <div id="r8-tasks" class="sub-pane">
+
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      R8改定 事務タスク一覧
+      <span class="task-progress" id="task-progress"></span>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+      チェック状態はブラウザに自動保存されます。
+      <span class="task-cat todoke">届出</span>
+      <span class="task-cat youken">要件</span>
+      <span class="task-cat jimu">事務</span>
+      <span class="task-cat kigen">期限</span>
+    </p>
+  </div>
+
+  <!-- 届出関連 -->
+  <div class="section">
+    <div class="section-title">届出の変更・新規・取り下げ</div>
+
+    <div class="task-card" data-task="t01">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>調剤基本料の届出更新</b><br>受付回数・集中率・グループ規模を再計算し、区分を再判定。様式84・85を地方厚生局に提出。<br><span class="task-deadline">期限：R8.6.1施行日まで</span></div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t02">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>地域支援・医薬品供給対応体制加算の届出</b><br>旧「地域支援体制加算＋後発医薬品調剤体制加算」→ 新加算への切り替え届出。様式87の3・87の3の2。<br>実績要件（9項目）の充足確認、医薬品分譲実績・重要供給確保医薬品備蓄の体制整備。<br><span class="task-deadline">経過措置：R9.5.31まで（後発体制加算からの移行みなし）</span></div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t03">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>後発医薬品調剤体制加算の届出取り下げ</b><br>R8で廃止。地域支援・医薬品供給対応体制加算に統合。経過措置期間中は届出維持も可。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t04">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>電子的調剤情報連携体制整備加算の届出変更</b><br>旧「医療DX推進体制整備加算」から名称・要件変更。様式87の3の6。<br>新要件：電子処方箋による重複投薬等チェック体制。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t05">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>在宅薬学総合体制加算の届出更新</b><br>実績要件の変更（訪問回数の見直し）。様式87の3の5。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t06">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>かかりつけ薬剤師指導料・包括管理料の届出取り下げ</b><br>R8で廃止。服薬管理指導料に統合。様式90の届出は不要に（服薬管理指導料の新区分で対応）。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t07">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>調剤ベースアップ評価料の届出</b><br>新規。職員賃金改善体制の届出が必要。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t08">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>バイオ後続品調剤体制加算の届出</b><br>新規。バイオ医薬品の適切な保管体制・患者説明体制。</div>
+        <span class="task-cat todoke">届出</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 要件確認 -->
+  <div class="section">
+    <div class="section-title">施設基準・要件の確認</div>
+
+    <div class="task-card" data-task="t10">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>かかりつけ薬剤師の要件確認</b><br>服薬管理指導料1イ・2イの算定に必要。薬剤師ごとに確認：<br>・経験3年以上 ・週32時間以上勤務 ・1年6ヶ月以上在籍 ・研修認定薬剤師 ・地域活動参画</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t11">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>地域支援・医薬品供給対応体制加算の実績要件集計</b><br>R7.5〜R8.4の実績を処方箋1万枚あたりで集計。9項目の充足状況を確認。<br>→ R8改定ページの「実績を入力」ボタンで自動集計可能</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t12">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>医薬品安定供給体制の整備</b><br>地域支援・医薬品供給対応体制加算の新要件：<br>・計画的な調達・在庫管理 ・他薬局への医薬品分譲実績 ・重要供給確保医薬品の1ヶ月分程度の備蓄</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t13">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>電子処方箋の重複投薬等チェック体制の整備</b><br>電子的調剤情報連携体制整備加算の新要件。電子処方箋システムでのチェック機能の運用確認。</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t14">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>在宅訪問の実績確認</b><br>在宅薬学総合体制加算の要件：直近1年間の訪問薬剤管理指導料等の算定回数を確認。</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t15">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>後発医薬品の調剤数量割合の確認</b><br>地域支援・医薬品供給対応体制加算の基本体制要件に後発品使用率が含まれる。現在の割合を確認。</div>
+        <span class="task-cat youken">要件</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 事務作業 -->
+  <div class="section">
+    <div class="section-title">事務・システム対応</div>
+
+    <div class="task-card" data-task="t20">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>レセコンのマスタ更新</b><br>調剤報酬点数表データ・加算ルール・施設基準判定ロジックの更新。ベンダーに確認・日程調整。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t21">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>廃止加算の算定停止設定</b><br>後発医薬品調剤体制加算・かかりつけ薬剤師指導料・包括管理料・重複防止加算・医療情報取得加算の算定不可設定。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t22">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>新規加算の算定設定</b><br>調剤時残薬調整加算・薬学的有害事象等防止加算・かかりつけFU加算・訪問加算・複数名訪問料・ベースアップ評価料・バイオ後続品加算の設定。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t23">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>調剤管理料の区分変更対応</b><br>4区分→2区分（27日以下10点/28日以上60点）への変更。レセコン設定の確認。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t24">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>服薬管理指導料の区分変更対応</b><br>薬A/B/C → 1イ/1ロ/2イ/2ロ/3に再編。かかりつけ薬剤師判定ロジックの組み込み。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t25">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>処方箋様式の変更対応</b><br>残薬対応欄の変更（減量調剤対応）。処方箋受付時の確認フローを見直し。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t26">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>スタッフへの研修・周知</b><br>新加算の要件、廃止加算、計算ルール変更、新しい算定フローの説明。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t27">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>患者向け説明資料の準備</b><br>窓口負担額の変更、新しいサービス（フォローアップ等）の案内文作成。</div>
+        <span class="task-cat jimu">事務</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- 経過措置 -->
+  <div class="section">
+    <div class="section-title">経過措置の期限管理</div>
+
+    <div class="task-card" data-task="t30">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>後発医薬品調剤体制加算の経過措置</b><br>R8.3時点で届出済みの場合、後発品使用率の要件をみなし適用。<br><span class="task-deadline">期限：R9.5.31（令和9年5月31日）</span></div>
+        <span class="task-cat kigen">期限</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t31">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>電子カルテ情報共有サービスの経過措置</b><br>電子的調剤情報連携体制整備加算の要件。<br><span class="task-deadline">期限：R8.5.31（令和8年5月31日）</span></div>
+        <span class="task-cat kigen">期限</span>
+      </label>
+    </div>
+
+    <div class="task-card" data-task="t32">
+      <label><input type="checkbox" onchange="toggleTask(this)">
+        <div><b>服用薬剤調整支援料2の施設基準追加</b><br>実績要件の厳格化。<br><span class="task-deadline">施行：R9.6.1（令和9年6月1日）</span></div>
+        <span class="task-cat kigen">期限</span>
+      </label>
+    </div>
+  </div>
+
+  </div><!-- /r8-tasks -->
+</div>
+
+</div><!-- /page-r8 -->
+
+<div id="page-shishutsu" class="page">
+<h2 style="margin-bottom:8px">支出管理</h2>
+<p style="color:var(--text2);margin-bottom:20px">決算書（PL）・月次試算表をアップロードして支出データを取り込みます</p>
+
+<!-- PLアップロード -->
+<div class="card" style="border-left:4px solid var(--accent)">
+  <h3>PLデータ取込</h3>
+  <p style="font-size:13px;color:var(--text2);margin-bottom:12px">月次試算表または損益計算書（CSV / Excel / PDF）をアップロードしてください。科目を自動で振り分けます。</p>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+    <input type="file" id="pl-file" accept=".csv,.xlsx,.xls,.pdf" style="font-size:13px">
+    <button onclick="importPL()" style="padding:8px 20px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);cursor:pointer;font-size:14px">取り込み</button>
+    <span id="pl-status" style="font-size:13px;color:var(--text2)"></span>
+  </div>
+  <div style="font-size:12px;color:var(--text2)">
+    <b>対応形式：</b>CSV（科目名,金額）、Excel（月次試算表）、PDF（決算書）<br>
+    <b>ヒント：</b>会計ソフト（freee / マネーフォワード / 弥生）からCSVエクスポートが最も確実です
+  </div>
+</div>
+
+<!-- 期間選択 -->
+<div style="margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <label><b>表示期間：</b></label>
+  <select id="pl-period" onchange="renderPL()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px">
+    <option value="">データなし</option>
+  </select>
+</div>
+
+<!-- PL表示 -->
+<div class="card">
+  <h3>損益計算書（PL）</h3>
+  <table class="tbl" style="font-size:13px" id="pl-table">
+    <thead><tr><th style="text-align:left">勘定科目</th><th style="text-align:right;width:150px">金額</th><th style="text-align:right;width:100px">構成比</th></tr></thead>
+    <tbody>
+      <tr style="background:#e8f5e9;font-weight:bold"><td>【売上高】</td><td id="pl_uriage" style="text-align:right">-</td><td style="text-align:right">100%</td></tr>
+      <tr><td style="padding-left:20px">調剤報酬</td><td id="pl_chozai" style="text-align:right">-</td><td id="pl_chozai_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">保険外収入</td><td id="pl_hokengai" style="text-align:right">-</td><td id="pl_hokengai_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#fff3e0;font-weight:bold"><td>【売上原価】</td><td id="pl_genka" style="text-align:right">-</td><td id="pl_genka_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">医薬品仕入高</td><td id="pl_shiire" style="text-align:right">-</td><td id="pl_shiire_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#e3f2fd;font-weight:bold"><td>【売上総利益（粗利）】</td><td id="pl_arari" style="text-align:right">-</td><td id="pl_arari_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#fce4ec;font-weight:bold"><td>【販管費】</td><td id="pl_hankan" style="text-align:right">-</td><td id="pl_hankan_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">給与手当</td><td id="pl_kyuyo" style="text-align:right">-</td><td id="pl_kyuyo_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">法定福利費</td><td id="pl_fukuri" style="text-align:right">-</td><td id="pl_fukuri_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">地代家賃</td><td id="pl_yachin" style="text-align:right">-</td><td id="pl_yachin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">リース料</td><td id="pl_lease" style="text-align:right">-</td><td id="pl_lease_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">水道光熱費</td><td id="pl_kounetsu" style="text-align:right">-</td><td id="pl_kounetsu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">通信費</td><td id="pl_tsushin" style="text-align:right">-</td><td id="pl_tsushin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">消耗品費</td><td id="pl_shomohin" style="text-align:right">-</td><td id="pl_shomohin_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">旅費交通費</td><td id="pl_kotsu" style="text-align:right">-</td><td id="pl_kotsu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">研修費</td><td id="pl_kenshu" style="text-align:right">-</td><td id="pl_kenshu_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">減価償却費</td><td id="pl_genka_sh" style="text-align:right">-</td><td id="pl_genka_sh_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">保険料</td><td id="pl_hoken" style="text-align:right">-</td><td id="pl_hoken_r" style="text-align:right">-</td></tr>
+      <tr><td style="padding-left:20px">その他販管費</td><td id="pl_other" style="text-align:right">-</td><td id="pl_other_r" style="text-align:right">-</td></tr>
+
+      <tr style="background:#e8f5e9;font-weight:bold;font-size:15px"><td>【営業利益】</td><td id="pl_rieki" style="text-align:right">-</td><td id="pl_rieki_r" style="text-align:right">-</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 手入力フォールバック -->
+<details style="margin-top:16px">
+  <summary style="cursor:pointer;font-size:14px;color:var(--accent)">PLデータがない場合は手入力</summary>
+  <div class="card" style="margin-top:8px">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+      <label><b>対象月：</b></label>
+      <input type="month" id="shishutsu-month" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:14px">
+      <button onclick="saveShishutsuManual()" style="padding:6px 16px;background:#4CAF50;color:#fff;border:none;border-radius:var(--radius);cursor:pointer">保存</button>
+    </div>
+    <table class="tbl" style="font-size:13px">
+      <thead><tr><th>科目</th><th style="width:150px">金額（円）</th></tr></thead>
+      <tbody>
+        <tr><td>医薬品仕入高</td><td><input type="text" id="sh_shiire" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>給与手当</td><td><input type="text" id="sh_kyuyo" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>法定福利費</td><td><input type="text" id="sh_fukuri" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>地代家賃</td><td><input type="text" id="sh_yachin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>リース料</td><td><input type="text" id="sh_lease" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>水道光熱費</td><td><input type="text" id="sh_kounetsu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>通信費</td><td><input type="text" id="sh_tsushin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>消耗品費</td><td><input type="text" id="sh_shomohin" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>旅費交通費</td><td><input type="text" id="sh_kotsu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>研修費</td><td><input type="text" id="sh_kenshu" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+        <tr><td>その他</td><td><input type="text" id="sh_other" class="sh-field" style="width:100%;text-align:right" placeholder="0"></td></tr>
+      </tbody>
+    </table>
+  </div>
+</details>
+</div>
+
+</div><!-- /page-shishutsu -->
+
+<div id="page-kaizen" class="page">
+<!-- 達成目標・累積件数 -->
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      施設基準 達成目標（R7.5〜R8.4 年間累積）
+      <button class="btn btn-secondary" onclick="updateGoals()" style="font-size:11px;padding:4px 12px">更新</button>
+    </div>
+    <div id="goal-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">売上推移</div>
+    <div style="overflow-x:auto">
+      <table class="entry-tbl" id="trend-table" style="font-size:15px">
+        <thead id="trend-thead"></thead>
+        <tbody id="trend-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">経営改善プラン</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:8px">入力済みデータに基づいて改善案を表示します。</p>
+    <button class="btn btn-primary" onclick="analyzeKaizen()">分析する</button>
+    <div id="kaizen-status" style="font-size:13px;color:var(--text2);margin-top:8px;min-height:20px"></div>
+  </div>
+
+  <!-- すぐにできる -->
+  <div class="section">
+    <div class="section-title" style="color:#2e7d32">すぐにできる改善案</div>
+    <div id="kaizen-now"></div>
+  </div>
+
+  <!-- ベンチマーク比較 -->
+  <div class="section">
+    <div class="section-title" style="color:#1565c0">ベンチマーク比較で見える改善案</div>
+    <div id="kaizen-bench"></div>
+  </div>
+
+  <!-- 中長期 -->
+  <div class="section">
+    <div class="section-title" style="color:#f57f17">中長期で取り組む改善案</div>
+    <div id="kaizen-long"></div>
+  </div>
+</div>
+
+</div><!-- /page-kaizen -->
+
+<div id="page-calendar" class="page">
+<div class="sub-tabs">
+    <div class="sub-tab active" onclick="showSubTab('cal-schedule',this)">カレンダー</div>
+    <div class="sub-tab" onclick="showSubTab('cal-shift',this)">シフト</div>
+    <div class="sub-tab" onclick="showSubTab('cal-tasks',this)">タスク</div>
+  </div>
+
+  <!-- 予定タブ -->
+  <div id="cal-schedule" class="sub-pane active">
+  <div class="section">
+    <div class="cal-nav">
+      <button onclick="calMove(-1)">&lt;</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button onclick="calMove(1)">&gt;</button>
+      <button onclick="calToday()" style="margin-left:8px;font-size:12px">今月</button>
+      <div style="margin-left:auto;display:flex;gap:6px;font-size:11px">
+        <span class="cal-evt todoke">届出</span>
+        <span class="cal-evt kigen">期限</span>
+        <span class="cal-evt jimu">事務</span>
+        <span class="cal-evt teiki">定期</span>
+        <span class="cal-evt task">タスク</span>
+        <span class="cal-evt custom">予定</span>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">予定を追加</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="date" id="cal-add-date" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+      <input type="text" id="cal-add-text" placeholder="内容" style="flex:1;min-width:200px;padding:6px;border:1px solid var(--border);border-radius:4px">
+      <select id="cal-add-type" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+        <option value="custom">予定</option>
+        <option value="task">タスク</option>
+        <option value="todoke">届出</option>
+        <option value="kigen">期限</option>
+        <option value="jimu">事務</option>
+        <option value="teiki">定期</option>
+      </select>
+      <select id="cal-add-assign" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+        <option value="">担当なし</option>
+      </select>
+      <button class="btn btn-primary" onclick="addCalEvent()" style="padding:6px 16px">追加</button>
+    </div>
+  </div>
+  </div>
+
+  <!-- シフトタブ -->
+  <div id="cal-shift" class="sub-pane">
+  <div class="section">
+    <div class="section-title">スタッフ管理</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <div><div style="font-size:11px;color:var(--text2)">名前</div>
+        <input type="text" id="staff-add-name" placeholder="名前" style="width:100px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:11px;color:var(--text2)">職種</div>
+        <select id="staff-add-role" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+          <option value="薬剤師">薬剤師</option>
+          <option value="事務">事務</option>
+        </select></div>
+      <div><div style="font-size:11px;color:var(--text2)">色</div>
+        <input type="color" id="staff-add-color" value="#534ab7" style="width:36px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer"></div>
+      <button class="btn btn-primary" onclick="addStaff()" style="padding:4px 12px;font-size:12px">追加</button>
+    </div>
+    <div id="staff-list" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+  </div>
+
+  <div class="section">
+    <div class="cal-nav">
+      <button onclick="shiftMove(-1)">&lt;</button>
+      <div class="cal-title" id="shift-title"></div>
+      <button onclick="shiftMove(1)">&gt;</button>
+      <button onclick="shiftToday()" style="margin-left:8px;font-size:12px">今月</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" id="shift-table" style="font-size:13px">
+      <thead id="shift-thead"></thead>
+      <tbody id="shift-tbody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">有給休暇管理</div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">スタッフ</th>
+        <th style="text-align:left">職種</th>
+        <th style="text-align:center">付与日数</th>
+        <th style="text-align:center">使用済</th>
+        <th style="text-align:center">残日数</th>
+        <th style="text-align:center">取得率</th>
+        <th style="text-align:center">次回付与日</th>
+      </tr></thead>
+      <tbody id="yukyu-tbody"></tbody>
+    </table>
+    <div class="tip" style="margin-top:8px">シフトで「有」を入れると自動で使用済にカウントされます。付与日数・次回付与日はスタッフ名の右の編集ボタンで設定。</div>
+  </div>
+  </div>
+
+  <!-- タスクタブ -->
+  <div id="cal-tasks" class="sub-pane">
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      タスク
+      <span id="daily-task-progress" style="font-size:13px;font-weight:bold;color:var(--teal)"></span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <input type="text" id="task-add-text" placeholder="タスクの内容" style="flex:1;min-width:200px;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <select id="task-add-assign" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="">担当なし</option>
+      </select>
+      <input type="date" id="task-add-due" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <select id="task-add-priority" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="normal">普通</option>
+        <option value="high">高</option>
+        <option value="low">低</option>
+      </select>
+      <button class="btn btn-primary" onclick="addDailyTask()" style="padding:6px 14px;font-size:13px">追加</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text2)">表示：</span>
+      <select id="task-view" onchange="renderDailyTasks()" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <option value="all">全て</option>
+        <option value="person">担当者別</option>
+        <option value="due">期限順</option>
+        <option value="active">未完了のみ</option>
+      </select>
+      <select id="task-filter-person" onchange="renderDailyTasks()" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <option value="">全員</option>
+      </select>
+    </div>
+    <div id="daily-task-list"></div>
+  </div>
+  </div>
+</div>
+
+</div><!-- /page-calendar -->
+
+<div id="page-zaiko" class="page">
+<!-- サブタブ -->
+<div class="sub-tabs" style="margin-bottom:16px">
+  <div class="sub-tab active" onclick="showSubTab('zaiko-shelves',this)">棚・在庫</div>
+  <div class="sub-tab" onclick="showSubTab('zaiko-order',this)">発注</div>
+  <div class="sub-tab" onclick="showSubTab('zaiko-haiki',this)">廃棄・返却</div>
+  <div class="sub-tab" onclick="showSubTab('zaiko-tanaoroshi',this)">棚卸</div>
+</div>
+
+<!-- ===== 棚・在庫タブ ===== -->
+<div id="zaiko-shelves" class="sub-pane active">
+  <div class="section">
+    <div class="section-title">棚レイアウト</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:16px;font-size:12px">
+      <div style="grid-column:1/3;background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:10px;text-align:center"><b>棚A</b><br>内服薬（あ〜さ行）</div>
+      <div style="grid-column:3/5;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px;text-align:center"><b>棚B</b><br>内服薬（た〜わ行）</div>
+      <div style="grid-column:5/7;background:#fff3e0;border:1px solid #ffcc80;border-radius:6px;padding:10px;text-align:center"><b>棚C</b><br>外用薬</div>
+      <div style="background:#fce4ec;border:1px solid #f48fb1;border-radius:6px;padding:10px;text-align:center"><b>棚D</b><br>注射薬</div>
+      <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:6px;padding:10px;text-align:center"><b>棚E</b><br>漢方薬</div>
+      <div style="background:#ffebee;border:1px solid #ef9a9a;border-radius:6px;padding:10px;text-align:center"><b>麻薬金庫</b><br>施錠管理</div>
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px;text-align:center"><b>毒薬庫</b><br>施錠管理</div>
+      <div style="grid-column:5/7;background:#e0f7fa;border:1px solid #80deea;border-radius:6px;padding:10px;text-align:center"><b>冷蔵庫</b><br>インスリン・バイオ・坐剤等</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">棚マスタ</div>
+    <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+      <input type="text" id="shelf-add-name" placeholder="棚名（例：棚A-1）" style="width:120px;padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <input type="text" id="shelf-add-desc" placeholder="説明（例：内服薬あ〜さ行）" style="width:200px;padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <button class="btn btn-primary" onclick="addShelf()" style="padding:4px 14px;font-size:13px">棚を追加</button>
+    </div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">棚名</th><th style="text-align:left">説明</th><th style="width:60px">操作</th></tr></thead>
+      <tbody id="shelf-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">在庫・期限管理</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <div><div style="font-size:12px;color:var(--text2)">薬品名</div>
+        <input type="text" id="med-add-name" placeholder="薬品名" style="width:220px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px" list="med-suggestions">
+        <datalist id="med-suggestions"></datalist></div>
+      <div><div style="font-size:12px;color:var(--text2)">棚</div>
+        <select id="med-add-shelf" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></select></div>
+      <div><div style="font-size:12px;color:var(--text2)">在庫数</div>
+        <input type="number" id="med-add-qty" value="1" min="0" style="width:70px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">消費期限</div>
+        <input type="month" id="med-add-exp" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <button class="btn btn-primary" onclick="addMed()" style="padding:5px 16px;font-size:13px">登録</button>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="med-search" placeholder="薬品名で検索" oninput="renderMeds()" style="width:220px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <select id="med-filter-shelf" onchange="renderMeds()" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="">全ての棚</option>
+      </select>
+      <label style="font-size:13px;cursor:pointer"><input type="checkbox" id="med-filter-exp" onchange="renderMeds()"> 期限3ヶ月以内のみ</label>
+      <span id="med-count" style="font-size:13px;color:var(--text2);margin-left:auto"></span>
+    </div>
+
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr>
+        <th style="text-align:left;cursor:pointer" onclick="sortMeds('name')">薬品名 ▼</th>
+        <th style="text-align:left;cursor:pointer" onclick="sortMeds('shelf')">棚 ▼</th>
+        <th style="text-align:right;cursor:pointer" onclick="sortMeds('qty')">在庫数 ▼</th>
+        <th style="text-align:center;cursor:pointer" onclick="sortMeds('exp')">消費期限 ▼</th>
+        <th style="text-align:center">状態</th>
+        <th style="width:60px">操作</th>
+      </tr></thead>
+      <tbody id="med-tbody"></tbody>
+    </table>
+    </div>
+  </div>
+</div><!-- /zaiko-shelves -->
+
+<!-- ===== 発注タブ ===== -->
+<div id="zaiko-order" class="sub-pane">
+
+  <!-- 在庫切れ発注 -->
+  <div class="section">
+    <div class="section-title" style="color:#c0392b">🔴 在庫切れ・不足（要発注）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">在庫数が0または発注点以下の医薬品。優先的に発注してください。</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <label style="font-size:13px">発注点：在庫</label>
+      <input type="number" id="order-threshold" value="1" min="0" style="width:60px;padding:4px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <label style="font-size:13px">以下</label>
+      <button class="btn btn-primary" onclick="renderOrderLists()" style="padding:4px 14px;font-size:13px">更新</button>
+      <button onclick="exportOrderList('shortage')" style="padding:4px 14px;font-size:13px;background:#4CAF50;color:#fff;border:none;border-radius:var(--radius);cursor:pointer">発注リスト出力</button>
+    </div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">薬品名</th><th>棚</th><th style="text-align:right">在庫数</th><th style="text-align:right;width:80px">発注数</th><th style="width:50px"><input type="checkbox" id="order-all-shortage" onchange="toggleOrderAll('shortage')"></th></tr></thead>
+      <tbody id="order-shortage-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 予製・在宅用発注 -->
+  <div class="section">
+    <div class="section-title" style="color:#2196F3">📋 予製・在宅用（計画発注）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">予製候補や在宅患者向けに必要な医薬品。カレンダーの予定から自動抽出します。</p>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <div><div style="font-size:12px;color:var(--text2)">薬品名</div>
+        <input type="text" id="plan-order-name" placeholder="薬品名" style="width:200px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">必要数</div>
+        <input type="number" id="plan-order-qty" value="1" min="1" style="width:70px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">用途</div>
+        <select id="plan-order-use" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+          <option>予製</option><option>在宅</option><option>その他</option>
+        </select></div>
+      <div><div style="font-size:12px;color:var(--text2)">必要日</div>
+        <input type="date" id="plan-order-date" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <button class="btn btn-primary" onclick="addPlanOrder()" style="padding:5px 16px;font-size:13px">追加</button>
+    </div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">薬品名</th><th style="text-align:right">必要数</th><th>用途</th><th>必要日</th><th>ステータス</th><th style="width:50px">削除</th></tr></thead>
+      <tbody id="plan-order-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 発注履歴 -->
+  <div class="section">
+    <div class="section-title">📦 発注履歴</div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th>発注日</th><th style="text-align:left">薬品名</th><th style="text-align:right">数量</th><th>種別</th><th>ステータス</th></tr></thead>
+      <tbody id="order-history-tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /zaiko-order -->
+
+<!-- ===== 廃棄・返却タブ ===== -->
+<div id="zaiko-haiki" class="sub-pane">
+
+  <!-- 期限切れ廃棄 -->
+  <div class="section">
+    <div class="section-title" style="color:#e67e22">⚠️ 期限切れ（要廃棄）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">消費期限を過ぎた医薬品。在庫一覧から自動抽出。</p>
+    <button onclick="renderExpiredList()" class="btn btn-primary" style="padding:4px 14px;font-size:13px;margin-bottom:10px">期限切れを検出</button>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">薬品名</th><th>棚</th><th style="text-align:right">在庫数</th><th>消費期限</th><th style="width:80px">廃棄登録</th></tr></thead>
+      <tbody id="expired-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 廃棄記録 -->
+  <div class="section">
+    <div class="section-title">廃棄医薬品記録</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">期限切れ・破損等で廃棄した医薬品を記録。仕入原価に含まれるため支出には二重計上しません。</p>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <div><div style="font-size:12px;color:var(--text2)">薬品名</div>
+        <input type="text" id="haiki-name" placeholder="薬品名" style="width:200px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">数量</div>
+        <input type="number" id="haiki-qty" value="1" min="1" style="width:70px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">薬価（円）</div>
+        <input type="number" id="haiki-price" placeholder="0" style="width:100px;padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">廃棄日</div>
+        <input type="date" id="haiki-date" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:12px;color:var(--text2)">理由</div>
+        <select id="haiki-reason" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+          <option>期限切れ</option><option>破損・汚損</option><option>回収</option><option>その他</option>
+        </select></div>
+      <button class="btn btn-primary" onclick="addHaiki()" style="padding:5px 16px;font-size:13px">記録</button>
+    </div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">薬品名</th><th style="text-align:right">数量</th><th style="text-align:right">損失額</th><th>廃棄日</th><th>理由</th><th style="width:50px">削除</th></tr></thead>
+      <tbody id="haiki-tbody"></tbody>
+      <tfoot><tr style="font-weight:bold;background:#f5f4f0"><td>合計</td><td id="haiki-total-qty" style="text-align:right"></td><td id="haiki-total-amt" style="text-align:right"></td><td colspan="3"></td></tr></tfoot>
+    </table>
+  </div>
+
+  <!-- 不動在庫・返却 -->
+  <div class="section">
+    <div class="section-title" style="color:#9C27B0">📤 不動在庫（返却候補）</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">一定期間使用されていない医薬品。卸への返却を検討してください。</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <label style="font-size:13px">不動期間：</label>
+      <select id="stagnant-months" style="padding:4px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="3">3ヶ月以上</option><option value="6" selected>6ヶ月以上</option><option value="12">12ヶ月以上</option>
+      </select>
+      <button onclick="renderStagnantList()" class="btn btn-primary" style="padding:4px 14px;font-size:13px">検出</button>
+    </div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th style="text-align:left">薬品名</th><th>棚</th><th style="text-align:right">在庫数</th><th>消費期限</th><th>最終使用</th><th style="width:80px">返却登録</th></tr></thead>
+      <tbody id="stagnant-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- 返却履歴 -->
+  <div class="section">
+    <div class="section-title">返却履歴</div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr><th>返却日</th><th style="text-align:left">薬品名</th><th style="text-align:right">数量</th><th>返却先</th><th style="text-align:right">返金額</th></tr></thead>
+      <tbody id="return-history-tbody"></tbody>
+    </table>
+  </div>
+
+</div><!-- /zaiko-haiki -->
+
+<!-- ===== 棚卸タブ ===== -->
+<div id="zaiko-tanaoroshi" class="sub-pane">
+  <div class="section">
+    <div class="section-title">棚卸</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <label><b>棚卸日：</b></label>
+      <input type="date" id="tanaoroshi-date" style="padding:5px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <button class="btn btn-primary" onclick="startTanaoroshi()" style="padding:5px 16px;font-size:13px">棚卸開始</button>
+      <button onclick="saveTanaoroshi()" style="padding:5px 16px;font-size:13px;background:#4CAF50;color:#fff;border:none;border-radius:var(--radius);cursor:pointer">棚卸結果を保存</button>
+      <span id="tanaoroshi-status" style="font-size:13px;color:var(--text2)"></span>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">「棚卸開始」で在庫一覧をコピーします。実数を入力して差異を確認してください。</p>
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">薬品名</th>
+        <th style="text-align:left">棚</th>
+        <th style="text-align:right">帳簿数</th>
+        <th style="text-align:right;width:80px">実数</th>
+        <th style="text-align:right">差異</th>
+        <th>備考</th>
+      </tr></thead>
+      <tbody id="tanaoroshi-tbody"></tbody>
+      <tfoot><tr style="font-weight:bold;background:#f5f4f0">
+        <td colspan="2">合計</td>
+        <td id="tana-book-total" style="text-align:right"></td>
+        <td id="tana-actual-total" style="text-align:right"></td>
+        <td id="tana-diff-total" style="text-align:right"></td>
+        <td></td>
+      </tr></tfoot>
+    </table>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="section-title" style="font-size:14px">棚卸履歴</div>
+      <table class="entry-tbl" style="font-size:13px">
+        <thead><tr><th>実施日</th><th style="text-align:right">品目数</th><th style="text-align:right">帳簿合計</th><th style="text-align:right">実数合計</th><th style="text-align:right">差異合計</th></tr></thead>
+        <tbody id="tanaoroshi-history"></tbody>
+      </table>
+    </div>
+  </div>
+</div><!-- /zaiko-tanaoroshi -->
+</div>
+
+</div><!-- /page-zaiko -->
+
+<div id="page-manual" class="page">
+<div class="sub-tabs">
+    <div class="sub-tab active" onclick="showSubTab('man-chozai',this)">調剤業務</div>
+    <div class="sub-tab" onclick="showSubTab('man-kasan',this)">加算の算定</div>
+    <div class="sub-tab" onclick="showSubTab('man-todoke',this)">届出・申請</div>
+    <div class="sub-tab" onclick="showSubTab('man-receipt',this)">レセプト</div>
+    <div class="sub-tab" onclick="showSubTab('man-zaitaku',this)">在宅訪問</div>
+    <div class="sub-tab" onclick="showSubTab('man-daily',this)">日次・月次</div>
+    <div class="sub-tab" onclick="showSubTab('man-tanaoroshi',this)">棚卸</div>
+    <div class="sub-tab" onclick="showSubTab('man-kisoku',this)">就業規則</div>
+    <div class="sub-tab" onclick="showSubTab('man-tejunsho',this)" style="background:#fff3e0;border-color:#FF9800">📖 業務手順書</div>
+  </div>
+
+  <div id="man-chozai" class="sub-pane active">
+  <!-- 1. 調剤業務 -->
+  <div class="manual-sec" id="m-chozai">
+    <h3>1. 調剤業務（処方箋受付〜投薬）</h3>
+    <div id="video-chozai" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-chozai-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-chozai-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('chozai')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>1-1. 処方箋受付</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>処方箋の受領・確認</b><br>患者名・生年月日・保険情報・処方医・有効期限（発行日含め4日以内）を確認。期限切れは受付不可。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>保険証・マイナ保険証の確認</b><br>オンライン資格確認で保険情報を取得。薬剤情報・特定健診情報を確認。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>お薬手帳の確認</b><br>持参の有無を確認。手帳アプリも可。3ヶ月以内の再来局かを判定（服薬管理指導料の区分に影響）。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>レセコンへの入力</b><br>処方内容を入力。一般名処方の場合は後発品への変更を検討。</div></div>
+    <div class="tip">受付時に後発品への変更希望を確認すると後発調剤率の向上につながる</div>
+
+    <h4>1-2. 処方鑑査</h4>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>処方内容の薬学的チェック</b><br>用法用量・相互作用・重複投薬・禁忌・アレルギーを確認。疑義があれば処方医に照会。</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-body"><b>薬歴の確認</b><br>過去の服用歴・副作用歴・残薬状況を確認。</div></div>
+    <div class="warn">疑義照会で処方変更があった場合は必ず記録→薬学的有害事象等防止加算（R8）の算定対象</div>
+
+    <h4>1-3. 調製・鑑査</h4>
+    <div class="step"><div class="step-num">7</div><div class="step-body"><b>薬剤の調製</b><br>処方内容に基づき調製。一包化・粉砕・半錠・計量混合等は該当加算を確認。</div></div>
+    <div class="step"><div class="step-num">8</div><div class="step-body"><b>最終鑑査</b><br>調製者と別の薬剤師が最終確認。薬剤名・数量・規格・外観を照合。</div></div>
+
+    <h4>1-4. 服薬指導・投薬</h4>
+    <div class="step"><div class="step-num">9</div><div class="step-body"><b>服薬指導</b><br>効果・用法用量・副作用・保管方法・相互作用（食品含む）を説明。お薬手帳にシール貼付。</div></div>
+    <div class="step"><div class="step-num">10</div><div class="step-body"><b>薬歴記録</b><br>SOAP形式で記録。指導内容・患者の理解度・次回確認事項を記載。</div></div>
+    <div class="step"><div class="step-num">11</div><div class="step-body"><b>会計・投薬</b><br>患者負担金の精算。薬剤交付。次回来局予定の確認。</div></div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-kasan" class="sub-pane">
+  <!-- 2. 加算の算定手順 -->
+  <div class="manual-sec" id="m-kasan">
+    <h3>2. 加算の算定手順</h3>
+    <div id="video-kasan" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-kasan-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-kasan-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('kasan')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>2-1. 服薬管理指導料</h4>
+    <ul>
+      <li><b>薬A（45点）</b>：手帳あり＋3ヶ月以内再来局 → 手帳確認・シール貼付・記録</li>
+      <li><b>薬B（59点）</b>：手帳なし＋3ヶ月以内 → 手帳作成を勧奨</li>
+      <li><b>薬C（59点）</b>：3ヶ月以上空いた場合・初回</li>
+      <li><b>R8変更</b>：かかりつけ薬剤師が対応→1イ/2イ（要かかりつけ要件）</li>
+    </ul>
+    <div class="tip">手帳持参率を上げる→薬A率UP→地域支援加算の実績要件にも貢献</div>
+
+    <h4>2-2. 重複投薬・相互作用等防止加算 → R8：薬学的有害事象等防止加算</h4>
+    <ol>
+      <li>処方鑑査で重複・相互作用・副作用リスクを発見</li>
+      <li>処方医に<b>疑義照会</b>を実施</li>
+      <li>処方変更が実現した場合に算定（残薬以外40点/残薬20点）</li>
+      <li>薬歴に照会内容・結果を記録</li>
+    </ol>
+    <div class="warn">照会したが変更なしの場合は算定不可。記録は残すこと。</div>
+
+    <h4>2-3. 調剤後フォローアップ（調剤後薬剤管理指導料 60点）</h4>
+    <ol>
+      <li>対象患者を特定：<b>インスリン新規開始</b>または<b>慢性心不全</b></li>
+      <li>調剤後2週間以内に電話・メール等で連絡</li>
+      <li>服用状況・副作用の有無・血糖値等を確認</li>
+      <li>結果を処方医に<b>文書で報告</b></li>
+      <li>薬歴に記録し算定</li>
+    </ol>
+    <div class="tip">地域支援体制加算の届出薬局が要件。月1回算定可。</div>
+
+    <h4>2-4. 服薬情報等提供料（トレーシングレポート）</h4>
+    <ol>
+      <li>服薬指導中に気づいた情報（副作用・アドヒアランス・残薬等）を整理</li>
+      <li>トレーシングレポートを作成（文書）</li>
+      <li>処方医にFAX・郵送・電子で送付</li>
+      <li>提供料1（30点・医療機関からの求め）または提供料2（20点・薬剤師判断）で算定</li>
+    </ol>
+    <div class="tip">年30回以上/1万枚で地域支援加算の実績要件ク充足</div>
+
+    <h4>2-5. 吸入薬指導加算（30点）</h4>
+    <ol>
+      <li>喘息・COPD患者に吸入デバイスの<b>実技指導</b></li>
+      <li>チェックリストで手技を評価・記録</li>
+      <li>処方医に結果を<b>文書で報告</b></li>
+      <li>R6：3月に1回 / R8：6月に1回で算定</li>
+    </ol>
+
+    <h4>2-6. 外来服薬支援料1（185点・残薬整理）</h4>
+    <ol>
+      <li>多剤服用の高齢患者等の残薬を確認</li>
+      <li>患者の自宅の残薬を薬局に持参してもらう（ブラウンバッグ）</li>
+      <li>残薬を整理・日数調整</li>
+      <li>処方医に報告し、次回処方の調整を依頼</li>
+      <li>月1回算定</li>
+    </ol>
+
+    <h4>2-7. かかりつけ薬剤師</h4>
+    <ol>
+      <li>要件確認：経験3年以上・週32時間以上・6ヶ月以上在籍・研修認定薬剤師・地域活動</li>
+      <li>患者に説明し<b>文書で同意</b>を取得</li>
+      <li>R6：かかりつけ薬剤師指導料（76点）で算定</li>
+      <li>R8：服薬管理指導料1イ/2イとして算定＋FU加算（50点・3月1回）</li>
+    </ol>
+
+    <h4>2-8. 服用薬剤調整支援料1（125点）</h4>
+    <ol>
+      <li>内服薬<b>6種類以上</b>の患者を抽出</li>
+      <li>減薬の提案書を作成</li>
+      <li>処方医に提案し、<b>2種類以上の削減</b>が実現</li>
+      <li>月1回算定</li>
+    </ol>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-todoke" class="sub-pane">
+  <!-- 3. 届出・申請 -->
+  <div class="manual-sec" id="m-todoke">
+    <h3>3. 届出・申請の手順</h3>
+    <div id="video-todoke" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-todoke-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-todoke-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('todoke')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>3-1. 届出の基本フロー</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>施設基準の確認</b><br>算定したい加算の施設基準を確認（人員・設備・実績要件）。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>届出様式の準備</b><br>厚生局HPから様式をダウンロード。項目名をクリックするとリンク付きで確認可能。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>添付書類の作成</b><br>実績データの集計、配置薬剤師一覧、研修修了証のコピー等を準備。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>地方厚生局に提出</b><br>郵送・窓口・電子申請（保険医療機関等電子申請システム）のいずれか。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>受理確認</b><br>月初の開庁日に届出 → 同月1日から算定可能。</div></div>
+
+    <h4>3-2. 主な届出様式一覧</h4>
+    <ul>
+      <li><b>様式84</b>：調剤基本料</li>
+      <li><b>様式87</b>：後発医薬品調剤体制加算</li>
+      <li><b>様式87の3</b>：地域支援体制加算（共通基準）</li>
+      <li><b>様式87の3の2</b>：地域支援体制加算（実績基準）</li>
+      <li><b>様式87の3の4</b>：連携強化加算</li>
+      <li><b>様式87の3の5</b>：在宅薬学総合体制加算</li>
+      <li><b>様式87の3の6</b>：医療DX推進体制整備加算</li>
+      <li><b>様式88</b>：無菌製剤処理加算</li>
+      <li><b>様式89</b>：在宅麻薬持続注射・中心静脈栄養法</li>
+      <li><b>様式90</b>：かかりつけ薬剤師</li>
+      <li><b>様式92</b>：特定薬剤管理指導加算2</li>
+    </ul>
+    <div class="tip">月次報酬ページで各加算名をクリックすると、届出様式のPDFリンクが表示されます</div>
+
+    <h4>3-3. R8改定の届出スケジュール</h4>
+    <ul>
+      <li><b>R8.4.1</b>：薬価改定 施行（レセコンマスタ更新）</li>
+      <li><b>R8.5.31</b>：R8届出の提出期限</li>
+      <li><b>R8.6.1</b>：R8調剤報酬改定 施行</li>
+      <li><b>R9.5.31</b>：後発体制加算の経過措置終了</li>
+    </ul>
+    <div class="warn">届出は施行日前に完了させること。期限を過ぎると翌月からの算定になる。</div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-receipt" class="sub-pane">
+  <!-- 4. レセプト業務 -->
+  <div class="manual-sec" id="m-receipt">
+    <h3>4. レセプト業務（月次請求）</h3>
+    <div id="video-receipt" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-receipt-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-receipt-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('receipt')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>4-1. 月次スケジュール</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>月末：当月分の入力確認</b><br>算定漏れ・入力ミスがないか全件チェック。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>1日〜5日：レセプト作成</b><br>レセコンでレセプトデータを作成。突合点検・縦覧点検を実施。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>10日まで：オンライン請求</b><br>社保（支払基金）・国保（国保連）にオンラインで送信。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>翌月：返戻・査定対応</b><br>返戻レセプトの内容を確認し、修正・再請求。査定の場合は再審査請求を検討。</div></div>
+
+    <h4>4-2. チェックポイント</h4>
+    <ul>
+      <li><b>保険情報</b>：資格喪失・変更がないか</li>
+      <li><b>加算の算定要件</b>：月1回制限・3月1回制限の超過がないか</li>
+      <li><b>薬剤名・数量</b>：処方箋と一致しているか</li>
+      <li><b>後発品変更</b>：変更不可の薬に変更していないか</li>
+      <li><b>公費</b>：公費番号・受給者番号が正しいか</li>
+    </ul>
+
+    <h4>4-3. UKEファイルの活用</h4>
+    <ul>
+      <li>レセコンから出力されるRECEIPTS.UKEファイルにはレセプト全データが含まれる</li>
+      <li>migiudeの月次報酬ページでUKEファイルを読み込むと自動でデータ反映</li>
+      <li>社保・国保それぞれのUKEを読み込み可能</li>
+    </ul>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-zaitaku" class="sub-pane">
+  <!-- 5. 在宅訪問 -->
+  <div class="manual-sec" id="m-zaitaku">
+    <h3>5. 在宅訪問</h3>
+    <div id="video-zaitaku" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-zaitaku-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-zaitaku-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('zaitaku')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>5-1. 訪問前の準備</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>医師からの指示</b><br>訪問薬剤管理指導の依頼を受ける。薬学的管理指導計画書を作成。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>患者情報の確認</b><br>処方内容・疾患・ADL・介護度・他職種の関わりを確認。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>持参物の準備</b><br>薬剤・お薬カレンダー・血圧計等のツール・訪問記録用紙。</div></div>
+
+    <h4>5-2. 訪問時の業務</h4>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>残薬確認</b><br>保管場所を確認し、残薬の種類・数量を把握。期限切れ薬の回収。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>服薬状況の確認</b><br>飲み忘れ・自己中断・副作用症状のヒアリング。バイタルサイン確認。</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-body"><b>服薬指導</b><br>用法用量の再確認、一包化の説明、服薬カレンダーのセット。</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-body"><b>環境確認</b><br>薬の保管環境（温度・湿度・直射日光）、転倒リスク等を確認。</div></div>
+
+    <h4>5-3. 訪問後の業務</h4>
+    <div class="step"><div class="step-num">8</div><div class="step-body"><b>報告書の作成</b><br>訪問結果を処方医に文書で報告。残薬状況・副作用・服薬アドヒアランス・提案事項を記載。</div></div>
+    <div class="step"><div class="step-num">9</div><div class="step-body"><b>ケアマネ等への情報共有</b><br>必要に応じて介護支援専門員・訪問看護師等に情報提供。</div></div>
+    <div class="step"><div class="step-num">10</div><div class="step-body"><b>薬歴記録・算定</b><br>訪問内容をSOAP形式で記録。訪問薬剤管理指導料を算定。</div></div>
+
+    <h4>5-4. 算定できる報酬</h4>
+    <ul>
+      <li><b>在宅患者訪問薬剤管理指導料</b>：650/320/290点（届出必要）</li>
+      <li><b>在宅薬学総合体制加算</b>：R8で30点/100点（届出必要）</li>
+      <li><b>麻薬管理加算</b>：100点（麻薬使用患者）</li>
+      <li><b>乳幼児加算</b>：100点（6歳未満）</li>
+      <li><b>R8新設：かかりつけ薬剤師訪問加算</b>：230点（6月1回）</li>
+    </ul>
+    <div class="tip">年間24回以上（1万枚あたり）で地域支援加算の実績要件キ充足</div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-daily" class="sub-pane">
+  <!-- 6. 日次・月次業務 -->
+  <div class="manual-sec" id="m-daily">
+    <h3>6. 日次・月次業務</h3>
+    <div id="video-daily" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-daily-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-daily-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('daily')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>6-1. 開局時</h4>
+    <ul>
+      <li>レセコン・分包機等の起動確認</li>
+      <li>麻薬金庫の施錠確認・在庫確認</li>
+      <li>冷蔵庫温度の記録（バイオ医薬品・インスリン等）</li>
+      <li>不足医薬品の発注</li>
+    </ul>
+
+    <h4>6-2. 営業中</h4>
+    <ul>
+      <li>処方箋受付→調剤→鑑査→投薬（1-1〜1-4参照）</li>
+      <li>疑義照会の実施と記録</li>
+      <li>トレーシングレポートの作成・送付</li>
+      <li>在宅訪問の実施（予定がある場合）</li>
+      <li>医薬品の検品・入庫</li>
+    </ul>
+
+    <h4>6-3. 閉局時</h4>
+    <ul>
+      <li>日計表の確認（処方箋枚数・売上）</li>
+      <li>麻薬帳簿の記入・在庫照合</li>
+      <li>翌日の在宅訪問準備</li>
+      <li>冷蔵庫温度の最終記録</li>
+      <li>施錠・警備セット</li>
+    </ul>
+
+    <h4>6-4. 月次業務</h4>
+    <ul>
+      <li><b>1日〜10日</b>：レセプト作成・オンライン請求（4章参照）</li>
+      <li><b>月末</b>：翌月の発注計画・在庫棚卸</li>
+      <li><b>随時</b>：返戻レセプト対応・再審査請求</li>
+      <li><b>随時</b>：migiudeへの月次データ入力（CSV or UKE）</li>
+      <li><b>四半期</b>：施設基準の実績確認（経営改善ページの達成目標で確認）</li>
+    </ul>
+
+    <h4>6-5. 年次業務</h4>
+    <ul>
+      <li><b>4月</b>：薬価改定対応（レセコンマスタ更新）</li>
+      <li><b>5月</b>：施設基準の届出更新（実績期間：前年5月〜当年4月）</li>
+      <li><b>6月</b>：診療報酬改定対応（改定年のみ）</li>
+      <li><b>随時</b>：麻薬年間届出・毒薬管理簿の確認</li>
+      <li><b>随時</b>：薬剤師の研修認定更新</li>
+    </ul>
+  </div>
+  </div><!-- /sub-pane -->
+
+  <!-- 棚卸マニュアル -->
+  <div id="man-tanaoroshi" class="sub-pane">
+  <div class="manual-sec">
+    <h3>棚卸業務マニュアル</h3>
+    <div id="video-tanaoroshi" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-tanaoroshi-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-tanaoroshi-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('tanaoroshi')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>1. 棚卸の目的</h4>
+    <ul>
+      <li><b>在庫の正確性確保</b>：帳簿上の在庫数と実際の在庫数の差異を把握</li>
+      <li><b>期限切れ防止</b>：消費期限が近い医薬品の早期発見と対応</li>
+      <li><b>不動在庫の発見</b>：長期間動いていない医薬品の特定・返品検討</li>
+      <li><b>廃棄損の把握</b>：廃棄医薬品の金額を正確に記録（経理上は仕入原価に含む）</li>
+      <li><b>決算対応</b>：期末棚卸資産の正確な計上</li>
+    </ul>
+
+    <h4>2. 実施頻度</h4>
+    <table class="tbl" style="font-size:13px;margin-bottom:12px">
+      <tr><td><b>全品棚卸</b></td><td>年2回（決算月＋中間）</td><td>全品目を実数確認</td></tr>
+      <tr><td><b>循環棚卸</b></td><td>毎月</td><td>棚ごとにローテーションで実施</td></tr>
+      <tr><td><b>スポット棚卸</b></td><td>随時</td><td>高額品・麻薬・向精神薬は毎日確認</td></tr>
+    </table>
+
+    <h4>3. 棚卸手順</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>準備</b><br>在庫管理ページで「棚卸開始」をクリック。現在の帳簿在庫が棚卸表にコピーされる。棚卸日を入力。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>実数カウント</b><br>棚ごとに2名1組で実施。1名がカウント、1名が入力。開封品・未開封品を区別して数える。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>差異確認</b><br>帳簿数と実数の差異が表示される。差異がある品目は原因を調査（処方漏れ・入力ミス・破損等）。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>結果保存</b><br>「棚卸結果を保存」で履歴に記録。帳簿在庫を実数に修正。差異の大きい品目は備考に原因を記載。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>期限切れ対応</b><br>期限切れ品を廃棄記録に登録。期限3ヶ月以内の品目はリストアップして優先使用・返品を検討。</div></div>
+
+    <h4>4. 麻薬・向精神薬の棚卸</h4>
+    <div class="warn">麻薬は<b>毎日の受払い記録</b>が法定義務。帳簿と実数が1錠でも合わない場合は直ちに管理薬剤師に報告。都道府県への届出が必要な場合がある。</div>
+    <ul>
+      <li>麻薬帳簿と照合（品名・ロット番号単位）</li>
+      <li>向精神薬は2年間の記録保存義務</li>
+      <li>毒薬・劇薬も施錠管理下で在庫確認</li>
+    </ul>
+
+    <h4>5. 不動在庫の対応</h4>
+    <ul>
+      <li><b>3ヶ月以上不動</b>：卸への返品を検討（返品期限を確認）</li>
+      <li><b>6ヶ月以上不動</b>：近隣薬局への譲渡を検討</li>
+      <li><b>期限6ヶ月以内＋不動</b>：廃棄候補としてリストアップ</li>
+    </ul>
+    <div class="tip">不動在庫の削減は直接的な経費削減につながる。在庫回転率の目標は月12回以上。</div>
+  </div>
+  </div><!-- /sub-pane tanaoroshi -->
+
+  <!-- 就業規則 -->
+  <div id="man-kisoku" class="sub-pane">
+  <div class="manual-sec">
+    <h3>8. 就業規則</h3>
+
+    <h4>8-1. 勤務時間</h4>
+    <ul>
+      <li><b>営業時間</b>：月〜金 9:00〜18:00 / 土 9:00〜13:00</li>
+      <li><b>所定労働時間</b>：1日8時間（休憩1時間）、週40時間</li>
+      <li><b>早番</b>：8:30〜17:30 / <b>遅番</b>：9:30〜18:30</li>
+      <li><b>時間外労働</b>：36協定の範囲内、月45時間・年360時間以内</li>
+    </ul>
+    <div class="tip">かかりつけ薬剤師の要件：週32時間以上勤務が必要</div>
+
+    <h4>8-2. 休日・休暇</h4>
+    <ul>
+      <li><b>定休日</b>：日曜・祝日</li>
+      <li><b>年間休日</b>：○○日（薬局に合わせて設定）</li>
+      <li><b>年次有給休暇</b>：
+        <ul>
+          <li>入社6ヶ月後：10日</li>
+          <li>1年6ヶ月：11日 / 2年6ヶ月：12日 / 3年6ヶ月：14日</li>
+          <li>4年6ヶ月：16日 / 5年6ヶ月：18日 / 6年6ヶ月以上：20日</li>
+        </ul>
+      </li>
+      <li><b>年5日の取得義務</b>：使用者は年10日以上付与された労働者に年5日を時季指定して取得させる義務</li>
+      <li><b>計画的付与</b>：労使協定により年5日を超える部分について計画的に付与可能</li>
+    </ul>
+    <div class="warn">年5日の有給取得義務に違反すると、労働者1人あたり30万円以下の罰金</div>
+
+    <h4>8-3. パートタイマーの有給休暇（比例付与）</h4>
+    <table class="entry-tbl" style="font-size:12px;max-width:600px">
+      <thead><tr><th>週所定日数</th><th>6ヶ月</th><th>1.5年</th><th>2.5年</th><th>3.5年</th><th>4.5年</th><th>5.5年</th><th>6.5年〜</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:bold">5日</td><td>10</td><td>11</td><td>12</td><td>14</td><td>16</td><td>18</td><td>20</td></tr>
+        <tr><td style="font-weight:bold">4日</td><td>7</td><td>8</td><td>9</td><td>10</td><td>12</td><td>13</td><td>15</td></tr>
+        <tr><td style="font-weight:bold">3日</td><td>5</td><td>6</td><td>6</td><td>8</td><td>9</td><td>10</td><td>11</td></tr>
+        <tr><td style="font-weight:bold">2日</td><td>3</td><td>4</td><td>4</td><td>5</td><td>6</td><td>6</td><td>7</td></tr>
+        <tr><td style="font-weight:bold">1日</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td></tr>
+      </tbody>
+    </table>
+
+    <h4>8-4. 服務規律</h4>
+    <ul>
+      <li>調剤過誤防止のため、鑑査は調製者と別の薬剤師が行う</li>
+      <li>麻薬・向精神薬・毒薬の取扱いは所定の手順に従う</li>
+      <li>患者の個人情報は薬局外に持ち出さない</li>
+      <li>処方箋・薬歴等の書類は3年間保管</li>
+      <li>白衣・名札を着用し、清潔な身だしなみを保つ</li>
+    </ul>
+
+    <h4>8-5. 研修・資格</h4>
+    <ul>
+      <li><b>認定薬剤師</b>：研修認定の取得・更新を推奨（かかりつけ薬剤師の要件）</li>
+      <li><b>研修会</b>：月1回以上の薬局内研修、年2回以上の外部研修</li>
+      <li><b>地域活動</b>：学校薬剤師・健康フェア等の地域活動への参画（施設基準要件）</li>
+    </ul>
+
+    <h4>8-6. 緊急時対応</h4>
+    <ul>
+      <li><b>調剤過誤発生時</b>：直ちに管理薬剤師に報告→患者対応→処方医連絡→インシデントレポート作成</li>
+      <li><b>災害時</b>：連携強化加算の要件に基づき、自治体の要請に応じて対応（医薬品供給・避難所での服薬相談等）</li>
+      <li><b>新興感染症発生時</b>：PCR検査対応・自宅療養者への薬剤配送等</li>
+    </ul>
+
+    <h4>8-7. 退職・解雇</h4>
+    <ul>
+      <li><b>自己都合退職</b>：退職日の30日以上前に書面で届出</li>
+      <li><b>引き継ぎ</b>：かかりつけ薬剤師の患者がいる場合は後任への引き継ぎを完了させる</li>
+      <li><b>守秘義務</b>：退職後も患者情報の守秘義務は継続</li>
+    </ul>
+    <div class="warn">この就業規則はテンプレートです。薬局の実態に合わせて編集してください。</div>
+  </div>
+  </div><!-- /sub-pane kisoku -->
+
+  <!-- 業務手順書（MDから読み込み） -->
+  <div id="man-tejunsho" class="sub-pane">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">📖 医薬品の安全使用のための業務手順書</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="tejunsho-search" placeholder="検索..." oninput="searchTejunsho()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:200px">
+          <span style="font-size:12px;color:var(--text2)">令和6年7月版</span>
+        </div>
+      </div>
+      <!-- 目次 -->
+      <div id="tejunsho-toc" style="margin-bottom:16px;padding:12px;background:var(--bg);border-radius:var(--radius);font-size:13px;max-height:200px;overflow-y:auto;cursor:pointer"></div>
+      <!-- 本文 -->
+      <div id="tejunsho-body" style="font-size:13px;line-height:1.8;max-height:70vh;overflow-y:auto;padding-right:8px"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page-manual -->
+
+<div id="page-auto" class="page">
+<h2 style="margin-bottom:8px">AI自動化ロードマップ</h2>
+<p style="color:var(--text2);margin-bottom:24px">薬局の事務業務をAIエージェントで段階的に自動化し、事務員3人→1人体制を実現する</p>
+
+<!-- フェーズ切替タブ -->
+<div class="sub-tabs">
+  <div class="sub-tab active" onclick="showSubTab('auto-ph1',this)">Phase 1<br><span style="font-size:11px">マニュアル化/アプリ化・支援</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph2',this)">Phase 2<br><span style="font-size:11px">事務自動化</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph3',this)">Phase 3<br><span style="font-size:11px">経理・労務自動化</span></div>
+  <div class="sub-tab" onclick="showSubTab('auto-ph4',this)">Phase 4<br><span style="font-size:11px">日常業務自動化</span></div>
+</div>
+
+<!-- Phase 1: マニュアル化・支援 -->
+<div id="auto-ph1" class="sub-pane active">
+<div class="card" style="border-left:4px solid #4CAF50">
+  <h3 style="color:#4CAF50">Phase 1：日常業務以外の事務作業をマニュアル化/アプリ化し支援</h3>
+  <p style="color:var(--text2);margin-bottom:16px">まず全ての事務作業を可視化・マニュアル化し、AIが支援できる体制を作る。</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:15%">ステータス</th><th style="width:15%">効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>業務の棚卸し・一覧化</b></td><td>全事務作業をリストアップ。頻度・所要時間・担当者を明確化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>業務の見える化</td></tr>
+      <tr><td><b>業務マニュアル作成</b></td><td>調剤・加算算定・届出・レセプト・在宅・日次月次業務の手順書をHTML化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>属人化の解消</td></tr>
+      <tr><td><b>就業規則の整備</b></td><td>勤務ルール・有給管理のマニュアル化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>労務の標準化</td></tr>
+      <tr><td><b>月次ダッシュボード構築</b></td><td>CSV取込→自動集計→売上推移・KPI表示。経営の見える化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>データ経営の基盤</td></tr>
+      <tr><td><b>統計表PDF→CSV自動変換</b></td><td>pdf2csv.pyでレセコン出力を自動CSV化。手入力を廃止。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>入力ミスゼロ</td></tr>
+      <tr><td><b>R8改定シミュレーター</b></td><td>報酬改定の影響を事前試算。届出変更のインパクトを可視化。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>改定対応の最適化</td></tr>
+      <tr><td><b>経営改善提案</b></td><td>データから改善余地を分析。すぐできる施策・中長期施策を提示。</td><td><span style="color:#4CAF50">★ 完了</span></td><td>売上増の道筋</td></tr>
+      <tr><td><b>データ永続化</b></td><td>localStorageからJSONファイル保存へ。データ消失を防止。</td><td><span style="color:#f59e0b">△ 着手中</span></td><td>運用安定性</td></tr>
+      <tr><td><b>レセプトデータ取込</b></td><td>UKEファイルをパースしてDB化。全データの自動取込基盤。</td><td><span style="color:#f59e0b">△ 設計中</span></td><td>手作業の大幅削減</td></tr>
+      <tr><td><b>薬剤マスタ整備</b></td><td>薬価・GE情報・棚番号をDB化。在庫管理と予製の基盤。</td><td><span style="color:var(--text2)">○ 未着手</span></td><td>在庫管理自動化の準備</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 1 図: データ基盤構築 -->
+  <div style="margin-top:20px;padding:16px;background:#f9f9f6;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 120" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4CAF50"/></marker></defs>
+      <!-- レセコン -->
+      <rect x="10" y="30" width="100" height="60" rx="8" fill="#fff" stroke="#4CAF50" stroke-width="2"/>
+      <text x="60" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">レセコン</text>
+      <text x="60" y="72" text-anchor="middle" font-size="10" fill="#888">PDF/CSV出力</text>
+      <!-- 矢印 -->
+      <line x1="110" y1="60" x2="160" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- pdf2csv -->
+      <rect x="160" y="30" width="100" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="210" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">pdf2csv.py</text>
+      <text x="210" y="72" text-anchor="middle" font-size="10" fill="#888">自動変換</text>
+      <!-- 矢印 -->
+      <line x1="260" y1="60" x2="310" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- DB -->
+      <rect x="310" y="30" width="100" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="360" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">DB</text>
+      <text x="360" y="72" text-anchor="middle" font-size="10" fill="#888">IndexedDB/JSON</text>
+      <!-- 矢印 -->
+      <line x1="410" y1="60" x2="460" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <!-- migiude薬局バックオフィス -->
+      <rect x="460" y="20" width="130" height="80" rx="8" fill="#4CAF50" stroke="#388E3C" stroke-width="2"/>
+      <text x="525" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">migiude薬局バックオフィス</text>
+      <text x="525" y="67" text-anchor="middle" font-size="10" fill="#e8f5e9">ダッシュボード</text>
+      <text x="525" y="82" text-anchor="middle" font-size="10" fill="#e8f5e9">マニュアル・改善</text>
+      <!-- スタッフ -->
+      <line x1="590" y1="60" x2="640" y2="60" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah1)"/>
+      <text x="670" y="55" text-anchor="middle" font-size="12" font-weight="bold" fill="#333">👩‍⚕️</text>
+      <text x="670" y="72" text-anchor="middle" font-size="10" fill="#888">スタッフ</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#e8f5e9;border-radius:8px">
+    <b>Phase 1の成果：</b>全業務が可視化され、AIが支援できる基盤が完成。誰でもマニュアルを見てアプリで簡単に業務ができる状態。
+  </div>
+</div>
+</div>
+
+<!-- Phase 2: 事務自動化 -->
+<div id="auto-ph2" class="sub-pane">
+<div class="card" style="border-left:4px solid #2196F3">
+  <h3 style="color:#2196F3">Phase 2：日常業務以外の事務作業を自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">事務作業をAIエージェントが自動実行。AIがスタッフの業務を管理し指示を出す。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#2196F3">目標：事務員が1人辞めても業務が回る状態（4人→3人でOK）</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:15%">自動化率</th><th style="width:15%">削減時間/月</th></tr></thead>
+    <tbody>
+      <tr><td><b>レセプト請求チェック</b></td><td>算定漏れ・入力ミスを自動検出。返戻リスクのある明細をハイライト。</td><td>80%</td><td>約4時間</td></tr>
+      <tr><td><b>届出書類の自動作成</b></td><td>施設基準の届出様式を自動生成。期限管理と提出リマインド。</td><td>90%</td><td>約2時間</td></tr>
+      <tr><td><b>予製候補の自動抽出</b></td><td>レセプト2ヶ月分から繰り返し処方を検出→予製リスト→カレンダー連携。</td><td>95%</td><td>約3時間</td></tr>
+      <tr><td><b>在庫発注アラート</b></td><td>消費パターンから発注点を学習。不足予測を3日前に通知。</td><td>70%</td><td>約2時間</td></tr>
+      <tr><td><b>シフト自動生成</b></td><td>有給・希望休・法定人数を考慮してシフト案を自動作成。</td><td>60%</td><td>約3時間</td></tr>
+      <tr><td><b>加算算定チェック</b></td><td>処方ごとに算定可能な加算を自動判定。取り漏れをアラート。</td><td>85%</td><td>売上増</td></tr>
+      <tr><td><b>タスク管理・指示出し</b></td><td>AIがスタッフごとの業務を管理。優先度を付けて指示。進捗を追跡。</td><td>70%</td><td>管理工数削減</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 2 図: AI業務管理フロー -->
+  <div style="margin-top:20px;padding:16px;background:#f5f9ff;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 180" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2196F3"/></marker></defs>
+      <!-- AIエージェント中央 -->
+      <rect x="250" y="10" width="200" height="50" rx="12" fill="#2196F3" stroke="#1565C0" stroke-width="2"/>
+      <text x="350" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">🤖 AIエージェント</text>
+      <text x="350" y="48" text-anchor="middle" font-size="10" fill="#bbdefb">業務管理・指示・チェック</text>
+      <!-- 下向き矢印群 -->
+      <line x1="200" y1="60" x2="200" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <line x1="350" y1="60" x2="350" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <line x1="500" y1="60" x2="500" y2="90" stroke="#2196F3" stroke-width="2" marker-end="url(#ah2)"/>
+      <!-- 接続線 -->
+      <line x1="200" y1="35" x2="250" y2="35" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="450" y1="35" x2="500" y2="35" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="200" y1="35" x2="200" y2="60" stroke="#2196F3" stroke-width="1.5"/>
+      <line x1="500" y1="35" x2="500" y2="60" stroke="#2196F3" stroke-width="1.5"/>
+      <!-- タスクボックス -->
+      <rect x="120" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="200" y="114" text-anchor="middle" font-size="11" fill="#333">レセプトチェック・届出</text>
+      <rect x="270" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="350" y="114" text-anchor="middle" font-size="11" fill="#333">予製・在庫・シフト</text>
+      <rect x="420" y="90" width="160" height="40" rx="6" fill="#e3f2fd" stroke="#2196F3" stroke-width="1.5"/>
+      <text x="500" y="114" text-anchor="middle" font-size="11" fill="#333">加算チェック・アラート</text>
+      <!-- スタッフ -->
+      <line x1="350" y1="130" x2="350" y2="155" stroke="#999" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#ah2)"/>
+      <text x="350" y="172" text-anchor="middle" font-size="11" fill="#666">👩‍💼 スタッフは確認・承認のみ</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#e3f2fd;border-radius:8px">
+    <b>Phase 2の目標効果：</b>月あたり約14時間の事務削減 ＋ 加算取り漏れ防止による売上増。事務員1人分の業務をAIが吸収。
+  </div>
+</div>
+</div>
+
+<!-- Phase 3: 経理・労務自動化 -->
+<div id="auto-ph3" class="sub-pane">
+<div class="card" style="border-left:4px solid #9C27B0">
+  <h3 style="color:#9C27B0">Phase 3：経理・労務業務を自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">経理・労務をAIが処理。人間は最終確認のみ。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#9C27B0">目標：税理士・社労士の費用を1/4に削減</p>
+
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:30%">期待効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>仕訳の自動記帳</b></td><td>レセプト・PL・請求書から仕訳を自動生成。<b>migiude経理</b>を使用。</td><td>記帳業務90%削減</td></tr>
+      <tr><td><b>月次試算表の自動作成</b></td><td>仕訳データから試算表・PL・BSを自動生成。税理士への報告を自動化。</td><td>月次報告の自動化</td></tr>
+      <tr><td><b>給与計算の自動化</b></td><td>シフト実績から勤怠集計→給与計算→明細作成。社保・税金も自動算定。<b>migiude労務</b>を使用。</td><td>給与計算工数ゼロ</td></tr>
+      <tr><td><b>年末調整の自動処理</b></td><td>スタッフから情報収集→計算→書類作成を自動化。<b>migiude労務</b>を使用。</td><td>年1回の大作業を削減</td></tr>
+      <tr><td><b>社会保険手続きの自動化</b></td><td>入退社・算定基礎届・月変届の自動作成。電子申請まで対応。<b>migiude労務</b>を使用。</td><td>社労士依頼の大幅削減</td></tr>
+      <tr><td><b>出退勤・有給アプリ作成</b></td><td>スタッフがスマホで打刻→勤怠データ自動集計。有給残日数の自動計算・取得義務（5日）未達アラート・36協定チェック。<b>migiude労務</b>を使用。</td><td>勤怠管理の完全自動化</td></tr>
+      <tr><td><b>請求書・領収書の自動処理</b></td><td>卸の請求書をスキャン→仕訳→支払スケジュール管理。インボイス対応。<b>migiude経理</b>を使用。</td><td>経費処理の自動化</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 3 図: migiudeエコシステム -->
+  <div style="margin-top:20px;padding:16px;background:#faf5ff;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 160" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#9C27B0"/></marker></defs>
+      <!-- migiude薬局バックオフィス -->
+      <rect x="250" y="10" width="200" height="50" rx="12" fill="#9C27B0" stroke="#6A1B9A" stroke-width="2"/>
+      <text x="350" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">migiude薬局バックオフィス</text>
+      <text x="350" y="48" text-anchor="middle" font-size="10" fill="#e1bee7">売上・レセプト・在庫データ</text>
+      <!-- 左矢印: 経理 -->
+      <line x1="250" y1="35" x2="150" y2="35" stroke="#9C27B0" stroke-width="1.5"/>
+      <line x1="150" y1="35" x2="150" y2="80" stroke="#9C27B0" stroke-width="2" marker-end="url(#ah3)"/>
+      <rect x="60" y="80" width="180" height="50" rx="8" fill="#f3e5f5" stroke="#9C27B0" stroke-width="2"/>
+      <text x="150" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#6A1B9A">migiude経理</text>
+      <text x="150" y="117" text-anchor="middle" font-size="10" fill="#888">仕訳・PL・BS・請求書</text>
+      <!-- 右矢印: 労務 -->
+      <line x1="450" y1="35" x2="550" y2="35" stroke="#9C27B0" stroke-width="1.5"/>
+      <line x1="550" y1="35" x2="550" y2="80" stroke="#9C27B0" stroke-width="2" marker-end="url(#ah3)"/>
+      <rect x="460" y="80" width="180" height="50" rx="8" fill="#f3e5f5" stroke="#9C27B0" stroke-width="2"/>
+      <text x="550" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#6A1B9A">migiude労務</text>
+      <text x="550" y="117" text-anchor="middle" font-size="10" fill="#888">勤怠・給与・社保・有給</text>
+      <!-- 下: 税理士/社労士 -->
+      <line x1="150" y1="130" x2="150" y2="150" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+      <text x="150" y="158" text-anchor="middle" font-size="10" fill="#999">税理士（決算のみ）</text>
+      <line x1="550" y1="130" x2="550" y2="150" stroke="#999" stroke-width="1" stroke-dasharray="4"/>
+      <text x="550" y="158" text-anchor="middle" font-size="10" fill="#999">社労士（特殊案件のみ）</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:12px;background:#f3e5f5;border-radius:8px">
+    <b>Phase 3の目標効果：</b>
+    <table style="font-size:13px;margin-top:8px">
+      <tr><td>税理士顧問料</td><td style="padding:0 12px">現状 月5万円 →</td><td style="font-weight:bold;color:#9C27B0">月1.25万円（決算・税務申告のみ依頼）</td></tr>
+      <tr><td>社労士顧問料</td><td style="padding:0 12px">現状 月3万円 →</td><td style="font-weight:bold;color:#9C27B0">月0.75万円（特殊案件のみ依頼）</td></tr>
+      <tr><td colspan="3" style="font-weight:bold;padding-top:8px">年間削減額：約72万円</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- Phase 4: 日常業務自動化 -->
+<div id="auto-ph4" class="sub-pane">
+<div class="card" style="border-left:4px solid #FF5722">
+  <h3 style="color:#FF5722">Phase 4：日常業務をマニュアル化・自動化</h3>
+  <p style="color:var(--text2);margin-bottom:4px">レセコンとAIを接続。処方箋を受けてからのレセコン作業をAIが行う。</p>
+  <p style="margin-bottom:16px;font-size:15px;font-weight:bold;color:#FF5722">目標：事務員3人→1人体制。薬剤師は対人業務に集中。</p>
+
+  <!-- レセコン作業代替フロー -->
+  <h4 style="margin-bottom:12px">レセコン作業の代替フロー</h4>
+  <div class="card" style="background:#fff5f2;border:1px solid #FF5722">
+    <table class="tbl" style="font-size:13px">
+      <thead><tr><th style="width:8%">Step</th><th style="width:30%">作業</th><th style="width:32%">現在（人が行う）</th><th style="width:30%">Phase 4（AIが行う）</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">①</td><td><b>レセコン入力</b></td><td>事務員が処方箋を見てレセコンに手入力</td><td>処方箋QRコード/OCR→NSIPS CSV→レセコンへ自動入力（Computer USE）</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">②</td><td><b>加算を選択</b></td><td>事務員・薬剤師が算定可能な加算を判断して手動選択</td><td>AIが患者情報・処方内容から算定可能な加算を自動判定・選択。取り漏れゼロ。</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">③</td><td><b>分包機・電子薬歴へ連携</b></td><td>レセコンから手動で連携操作</td><td>NSIPS経由で分包機・電子薬歴へ自動連携</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">④</td><td><b>印刷</b></td><td>処方箋控え・お薬説明書・報酬明細・薬袋・お薬手帳シールを個別に印刷操作</td><td>AIが一括印刷指示。印刷完了を自動確認。</td></tr>
+        <tr><td style="text-align:center;font-weight:bold;color:#FF5722">⑤</td><td><b>目視確認</b></td><td>処方箋と調剤内容の照合を薬剤師が行う</td><td>AIが事前チェック済み。薬剤師は<b>確認・承認のみ</b>。</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- NSIPS連携 -->
+  <h4 style="margin-top:24px;margin-bottom:12px">NSIPS（薬局間データ連携）によるAPI連携</h4>
+  <div class="card" style="background:#f5f9ff;border:1px solid #2196F3">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">エリシア（レセコン）はNSIPS対応。CSVファイルでデータを入出力でき、AIとの連携基盤になる。</p>
+    <p style="font-size:12px;margin-bottom:8px"><b>ファイル例：</b><code>SIPS1/RX2026032600013000000000000001.csv</code></p>
+    <div style="background:#1e1e1e;color:#d4d4d4;padding:12px;border-radius:6px;font-family:monospace;font-size:11px;overflow-x:auto;line-height:1.6">
+      <span style="color:#888">// 1: バージョンレコード（薬局情報）</span><br>
+      <span style="color:#ce9178">1</span>,01,,,,"<span style="color:#4ec9b0">大分調剤薬局</span>",,"0975-XX-XXXX",,<br><br>
+      <span style="color:#888">// 2: 患者レコード</span><br>
+      <span style="color:#ce9178">2</span>,01,,,"40123456","<span style="color:#4ec9b0">田中 太郎</span>","19600401","<span style="color:#b5cea8">1</span>","870-0000","大分県大分市○○1-2-3","097-XXX-XXXX",,<br><br>
+      <span style="color:#888">// 3: 処方レコード（医療機関・医師・診療科）</span><br>
+      <span style="color:#ce9178">3</span>,01,,,"13","<span style="color:#4ec9b0">2026-03-26</span>","1","131010","<span style="color:#4ec9b0">大分中央病院</span>","12345678","山田 一郎","01","内科",,<br><br>
+      <span style="color:#888">// 11: 薬品レコード（コード・薬品名・用量・回数・日数・用法）</span><br>
+      <span style="color:#ce9178">11</span>,01,01,"4","1234567890123","<span style="color:#4ec9b0">アムロジピン錠5mg「XX」</span>","5","mg","<span style="color:#b5cea8">1</span>","1","<span style="color:#b5cea8">28</span>","1","毎食後",,<br>
+      <span style="color:#ce9178">11</span>,01,02,"4","9876543210123","<span style="color:#4ec9b0">メトホルミン塩酸塩錠250mg</span>","250","mg","<span style="color:#b5cea8">3</span>","3","<span style="color:#b5cea8">28</span>","1","毎食後",,<br><br>
+      <span style="color:#888">// 9: エンドレコード</span><br>
+      <span style="color:#ce9178">9</span>,01,,
+    </div>
+    <table class="tbl" style="font-size:12px;margin-top:12px">
+      <thead><tr><th>先頭番号</th><th>レコード種別</th><th>主な内容</th></tr></thead>
+      <tbody>
+        <tr><td><code>1</code></td><td>バージョン</td><td>薬局名・電話番号</td></tr>
+        <tr><td><code>2</code></td><td>患者</td><td>患者ID・氏名・生年月日・性別・住所・電話番号</td></tr>
+        <tr><td><code>3</code></td><td>処方</td><td>受付番号・処方日・保険番号・医療機関・医師・診療科</td></tr>
+        <tr><td><code>11</code></td><td>薬品</td><td>コード種別・YJコード・薬品名・用量・単位・回数・日数・用法</td></tr>
+        <tr><td><code>9</code></td><td>エンド</td><td>ファイル終端</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;padding:10px;background:#e3f2fd;border-radius:6px;font-size:12px">
+      <b>連携フロー：</b>処方箋QRコード → NSIPS CSV生成 → AIがCSVを読み取り → レセコンへ自動入力 + 分包機・薬歴へ連携 → 印刷指示
+    </div>
+  </div>
+
+  <h4 style="margin-top:24px;margin-bottom:12px">AIが行う業務</h4>
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">タスク</th><th style="width:40%">内容</th><th style="width:30%">期待効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>処方箋→レセコン入力</b></td><td>処方箋QRコード/OCR→NSIPS CSV変換→Computer USEでレセコンに自動入力。</td><td>入力作業の自動化</td></tr>
+      <tr><td><b>分包機・薬歴連携</b></td><td>NSIPS経由で分包機の分包指示と電子薬歴への処方データ連携を自動実行。</td><td>連携作業の自動化</td></tr>
+      <tr><td><b>印刷一括指示</b></td><td>処方箋控え・お薬説明書・報酬明細・薬袋・お薬手帳シールを一括印刷。</td><td>印刷作業の自動化</td></tr>
+      <tr><td><b>薬歴記載の下書き</b></td><td>処方内容・患者情報から薬歴のSOAP下書きを自動生成。薬剤師は確認・修正のみ。</td><td>薬歴作成時間50%削減</td></tr>
+      <tr><td><b>レセプト自動作成・提出</b></td><td>月次の請求データを自動生成。チェック→オンライン提出。人間は最終承認のみ。</td><td>レセプト業務90%削減</td></tr>
+      <tr><td><b>在庫の自動発注</b></td><td>消費予測に基づき卸に自動発注。緊急・特殊品のみ人間判断。</td><td>欠品ゼロ・過剰在庫削減</td></tr>
+      <tr><td><b>患者フォローアップ</b></td><td>服薬フォローのメッセージ自動送信。返信内容を薬歴に反映。</td><td>フォロー率100%</td></tr>
+      <tr><td><b>監査対応資料の常時準備</b></td><td>個別指導・適時調査に必要な資料を常にDB上で整備。通知があれば即出力。</td><td>監査準備ゼロ</td></tr>
+    </tbody>
+  </table>
+
+  <h4 style="margin-top:24px;margin-bottom:12px">人が行う業務</h4>
+  <table class="tbl" style="font-size:13px">
+    <thead><tr><th style="width:30%">担当</th><th style="width:70%">業務内容</th></tr></thead>
+    <tbody>
+      <tr><td><b>薬剤師（2名）</b></td><td>AIの作業確認・最終チェック、患者対応（服薬指導・相談）、薬の準備・監査、在宅訪問の営業・実施、かかりつけ業務</td></tr>
+      <tr><td><b>事務員（1名）</b></td><td>処方箋の受付・スキャン、電話対応、会計、AIが処理できない例外対応</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Phase 4 図: 完全自動化の業務分担 -->
+  <div style="margin-top:20px;padding:16px;background:#fff5f2;border-radius:8px;overflow-x:auto">
+    <svg viewBox="0 0 700 220" style="width:100%;max-width:700px;display:block;margin:0 auto">
+      <defs><marker id="ah4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#FF5722"/></marker></defs>
+      <!-- 処方箋 -->
+      <rect x="10" y="20" width="90" height="50" rx="8" fill="#fff" stroke="#FF5722" stroke-width="2"/>
+      <text x="55" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">📄 処方箋</text>
+      <text x="55" y="55" text-anchor="middle" font-size="9" fill="#888">受付・スキャン</text>
+      <!-- 矢印 -->
+      <line x1="100" y1="45" x2="140" y2="45" stroke="#FF5722" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- AI -->
+      <rect x="140" y="10" width="220" height="70" rx="12" fill="#FF5722" stroke="#D84315" stroke-width="2"/>
+      <text x="250" y="32" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">🤖 AI（Computer USE）</text>
+      <text x="250" y="50" text-anchor="middle" font-size="10" fill="#ffccbc">レセコン操作・入力・チェック</text>
+      <text x="250" y="65" text-anchor="middle" font-size="10" fill="#ffccbc">薬歴下書き・レセプト作成</text>
+      <!-- 矢印: 確認 -->
+      <line x1="360" y1="45" x2="400" y2="45" stroke="#FF5722" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- 薬剤師確認 -->
+      <rect x="400" y="20" width="130" height="50" rx="8" fill="#fff3e0" stroke="#FF5722" stroke-width="2"/>
+      <text x="465" y="40" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">👩‍⚕️ 薬剤師</text>
+      <text x="465" y="55" text-anchor="middle" font-size="9" fill="#888">確認・承認のみ</text>
+      <!-- 矢印: 患者 -->
+      <line x1="530" y1="45" x2="570" y2="45" stroke="#4CAF50" stroke-width="2" marker-end="url(#ah4)"/>
+      <!-- 患者対応 -->
+      <rect x="570" y="15" width="120" height="60" rx="8" fill="#e8f5e9" stroke="#4CAF50" stroke-width="2"/>
+      <text x="630" y="35" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">🧑 患者対応</text>
+      <text x="630" y="50" text-anchor="middle" font-size="9" fill="#888">服薬指導・相談</text>
+      <text x="630" y="63" text-anchor="middle" font-size="9" fill="#888">在宅訪問</text>
+      <!-- 下段: 人員構成 Before/After -->
+      <text x="15" y="115" font-size="12" font-weight="bold" fill="#333">現在</text>
+      <rect x="70" y="100" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="95" y="119" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="125" y="100" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="150" y="119" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="180" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="200" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="225" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="245" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="270" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="290" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="315" y="100" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="335" y="119" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <text x="375" y="119" font-size="12" fill="#333">= 6人</text>
+      <!-- 矢印 -->
+      <text x="350" y="155" text-anchor="middle" font-size="20" fill="#FF5722">▼</text>
+      <text x="15" y="190" font-size="12" font-weight="bold" fill="#FF5722">Phase 4</text>
+      <rect x="70" y="175" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="95" y="194" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="125" y="175" width="50" height="30" rx="4" fill="#e3f2fd" stroke="#2196F3" stroke-width="1"/><text x="150" y="194" text-anchor="middle" font-size="9" fill="#333">薬剤師</text>
+      <rect x="180" y="175" width="40" height="30" rx="4" fill="#ffecb3" stroke="#FF9800" stroke-width="1"/><text x="200" y="194" text-anchor="middle" font-size="9" fill="#333">事務</text>
+      <rect x="240" y="175" width="80" height="30" rx="4" fill="#FF5722" stroke="#D84315" stroke-width="1"/><text x="280" y="194" text-anchor="middle" font-size="9" fill="#fff">🤖 AI</text>
+      <text x="340" y="194" font-size="12" fill="#FF5722" font-weight="bold">= 3人+AI</text>
+      <!-- 削減テキスト -->
+      <text x="460" y="190" font-size="12" fill="#FF5722" font-weight="bold">▲事務員2名分 = 年間400〜500万円削減</text>
+    </svg>
+  </div>
+
+  <div style="margin-top:16px;padding:16px;background:#fbe9e7;border-radius:8px">
+    <b>Phase 4の目標効果：</b>
+    <table style="font-size:13px;margin-top:8px">
+      <tr><td>事務員</td><td style="padding:0 12px">3人 →</td><td style="font-weight:bold;color:#FF5722">1人</td><td style="padding-left:12px;color:var(--text2)">もしもの時は薬剤師だけで対応可能、またはタイミー等の単発バイトで対応</td></tr>
+      <tr><td>人件費削減</td><td style="padding:0 12px" colspan="3"><span style="font-weight:bold;color:#FF5722">年間約400〜500万円</span>（事務員2名分の給与＋社保）</td></tr>
+      <tr><td>新たな収入源</td><td style="padding:0 12px" colspan="3">これまで出来なかった在宅の営業が可能に。在宅件数の増加で年間+100〜200万円</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- 全フェーズサマリ -->
+<div class="card" style="margin-top:24px;border:2px solid var(--accent)">
+  <h3 style="margin-bottom:16px">全フェーズ完了時の想定効果</h3>
+  <table class="tbl" style="font-size:14px">
+    <thead><tr><th style="text-align:left">項目</th><th style="text-align:left">現状</th><th style="text-align:left">Phase 4完了後</th><th style="text-align:right">年間効果</th></tr></thead>
+    <tbody>
+      <tr><td><b>事務員</b></td><td>4人</td><td style="font-weight:bold;color:#FF5722">1人</td><td style="text-align:right;color:#FF5722;font-weight:bold">▲600〜750万円</td></tr>
+      <tr><td><b>税理士・社労士</b></td><td>月8万円</td><td style="font-weight:bold;color:#9C27B0">月2万円</td><td style="text-align:right;color:#9C27B0;font-weight:bold">▲72万円</td></tr>
+      <tr><td><b>加算取り漏れ防止</b></td><td>年間推定▲50万円</td><td>ほぼゼロ</td><td style="text-align:right;color:#4CAF50;font-weight:bold">+50万円</td></tr>
+      <tr><td><b>在宅訪問の拡大</b></td><td>月3件</td><td>月10件以上</td><td style="text-align:right;color:#4CAF50;font-weight:bold">+100〜200万円</td></tr>
+      <tr style="background:#fff3e0;font-size:16px"><td colspan="3"><b>年間の経営改善効果合計</b></td><td style="text-align:right;font-weight:bold;color:#FF5722;font-size:18px">+822〜1,072万円</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+
+</div><!-- /page-auto -->
+
+<div id="page-memo" class="page">
+<h2 style="margin-bottom:16px">メモ・未処理項目</h2>
+
+<!-- 入力フォーム -->
+<div class="card" style="border-left:4px solid var(--accent)">
+  <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="memo-cat" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <option value="question">質問</option>
+      <option value="todo">未処理</option>
+      <option value="confirm">確認事項</option>
+      <option value="idea">アイデア</option>
+      <option value="bug">不具合</option>
+    </select>
+    <select id="memo-priority" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <option value="high">優先：高</option>
+      <option value="mid" selected>優先：中</option>
+      <option value="low">優先：低</option>
+    </select>
+    <input type="text" id="memo-tag" placeholder="タグ（例：レセコン、NSIPS）" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:200px">
+  </div>
+  <textarea id="memo-text" rows="3" placeholder="内容を入力..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;resize:vertical;margin-bottom:12px"></textarea>
+  <div style="display:flex;gap:12px">
+    <button onclick="addMemo()" style="padding:10px 32px;background:#2196F3;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold">＋ 追加</button>
+    <button onclick="clearAllMemos()" style="padding:10px 24px;background:#c0392b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">全削除</button>
+  </div>
+</div>
+
+<!-- フィルター -->
+<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+  <b style="font-size:13px">表示：</b>
+  <button class="memo-filter active" onclick="filterMemo('all',this)">全て</button>
+  <button class="memo-filter" onclick="filterMemo('question',this)">質問</button>
+  <button class="memo-filter" onclick="filterMemo('todo',this)">未処理</button>
+  <button class="memo-filter" onclick="filterMemo('confirm',this)">確認事項</button>
+  <button class="memo-filter" onclick="filterMemo('idea',this)">アイデア</button>
+  <button class="memo-filter" onclick="filterMemo('bug',this)">不具合</button>
+  <span style="margin-left:auto;font-size:12px;color:var(--text2)" id="memo-count"></span>
+</div>
+
+<!-- メモ一覧 -->
+<div id="memo-list">
+</div>
+
+</div><!-- /page-memo -->
+
+<script src="migiude.js"></script>
+
+<div class="modal-overlay" id="badge-modal" onclick="if(event.target===this)this.classList.remove('active')">
+  <div class="modal-box">
+    <h3 class="modal-title"></h3>
+    <span class="badge-type"></span>
+    <div class="modal-body"></div>
+    <button class="close-btn" onclick="this.closest('.modal-overlay').classList.remove('active')">閉じる</button>
+  </div>
+</div>
+
+</body>
+</html>

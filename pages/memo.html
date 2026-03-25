@@ -1,0 +1,40 @@
+<h2 style="margin-bottom:16px">メモ・未処理項目</h2>
+
+<!-- 入力フォーム -->
+<div class="card" style="border-left:4px solid var(--accent)">
+  <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="memo-cat" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <option value="question">質問</option>
+      <option value="todo">未処理</option>
+      <option value="confirm">確認事項</option>
+      <option value="idea">アイデア</option>
+      <option value="bug">不具合</option>
+    </select>
+    <select id="memo-priority" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px">
+      <option value="high">優先：高</option>
+      <option value="mid" selected>優先：中</option>
+      <option value="low">優先：低</option>
+    </select>
+    <input type="text" id="memo-tag" placeholder="タグ（例：レセコン、NSIPS）" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:200px">
+  </div>
+  <textarea id="memo-text" rows="3" placeholder="内容を入力..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;resize:vertical;margin-bottom:12px"></textarea>
+  <div style="display:flex;gap:12px">
+    <button onclick="addMemo()" style="padding:10px 32px;background:#2196F3;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:bold">＋ 追加</button>
+    <button onclick="clearAllMemos()" style="padding:10px 24px;background:#c0392b;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">全削除</button>
+  </div>
+</div>
+
+<!-- フィルター -->
+<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+  <b style="font-size:13px">表示：</b>
+  <button class="memo-filter active" onclick="filterMemo('all',this)">全て</button>
+  <button class="memo-filter" onclick="filterMemo('question',this)">質問</button>
+  <button class="memo-filter" onclick="filterMemo('todo',this)">未処理</button>
+  <button class="memo-filter" onclick="filterMemo('confirm',this)">確認事項</button>
+  <button class="memo-filter" onclick="filterMemo('idea',this)">アイデア</button>
+  <button class="memo-filter" onclick="filterMemo('bug',this)">不具合</button>
+  <span style="margin-left:auto;font-size:12px;color:var(--text2)" id="memo-count"></span>
+</div>
+
+<!-- メモ一覧 -->
+<div id="memo-list">

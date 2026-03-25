@@ -1,0 +1,462 @@
+<div class="sub-tabs">
+    <div class="sub-tab active" onclick="showSubTab('man-chozai',this)">調剤業務</div>
+    <div class="sub-tab" onclick="showSubTab('man-kasan',this)">加算の算定</div>
+    <div class="sub-tab" onclick="showSubTab('man-todoke',this)">届出・申請</div>
+    <div class="sub-tab" onclick="showSubTab('man-receipt',this)">レセプト</div>
+    <div class="sub-tab" onclick="showSubTab('man-zaitaku',this)">在宅訪問</div>
+    <div class="sub-tab" onclick="showSubTab('man-daily',this)">日次・月次</div>
+    <div class="sub-tab" onclick="showSubTab('man-tanaoroshi',this)">棚卸</div>
+    <div class="sub-tab" onclick="showSubTab('man-kisoku',this)">就業規則</div>
+    <div class="sub-tab" onclick="showSubTab('man-tejunsho',this)" style="background:#fff3e0;border-color:#FF9800">📖 業務手順書</div>
+  </div>
+
+  <div id="man-chozai" class="sub-pane active">
+  <!-- 1. 調剤業務 -->
+  <div class="manual-sec" id="m-chozai">
+    <h3>1. 調剤業務（処方箋受付〜投薬）</h3>
+    <div id="video-chozai" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-chozai-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-chozai-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('chozai')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>1-1. 処方箋受付</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>処方箋の受領・確認</b><br>患者名・生年月日・保険情報・処方医・有効期限（発行日含め4日以内）を確認。期限切れは受付不可。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>保険証・マイナ保険証の確認</b><br>オンライン資格確認で保険情報を取得。薬剤情報・特定健診情報を確認。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>お薬手帳の確認</b><br>持参の有無を確認。手帳アプリも可。3ヶ月以内の再来局かを判定（服薬管理指導料の区分に影響）。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>レセコンへの入力</b><br>処方内容を入力。一般名処方の場合は後発品への変更を検討。</div></div>
+    <div class="tip">受付時に後発品への変更希望を確認すると後発調剤率の向上につながる</div>
+
+    <h4>1-2. 処方鑑査</h4>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>処方内容の薬学的チェック</b><br>用法用量・相互作用・重複投薬・禁忌・アレルギーを確認。疑義があれば処方医に照会。</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-body"><b>薬歴の確認</b><br>過去の服用歴・副作用歴・残薬状況を確認。</div></div>
+    <div class="warn">疑義照会で処方変更があった場合は必ず記録→薬学的有害事象等防止加算（R8）の算定対象</div>
+
+    <h4>1-3. 調製・鑑査</h4>
+    <div class="step"><div class="step-num">7</div><div class="step-body"><b>薬剤の調製</b><br>処方内容に基づき調製。一包化・粉砕・半錠・計量混合等は該当加算を確認。</div></div>
+    <div class="step"><div class="step-num">8</div><div class="step-body"><b>最終鑑査</b><br>調製者と別の薬剤師が最終確認。薬剤名・数量・規格・外観を照合。</div></div>
+
+    <h4>1-4. 服薬指導・投薬</h4>
+    <div class="step"><div class="step-num">9</div><div class="step-body"><b>服薬指導</b><br>効果・用法用量・副作用・保管方法・相互作用（食品含む）を説明。お薬手帳にシール貼付。</div></div>
+    <div class="step"><div class="step-num">10</div><div class="step-body"><b>薬歴記録</b><br>SOAP形式で記録。指導内容・患者の理解度・次回確認事項を記載。</div></div>
+    <div class="step"><div class="step-num">11</div><div class="step-body"><b>会計・投薬</b><br>患者負担金の精算。薬剤交付。次回来局予定の確認。</div></div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-kasan" class="sub-pane">
+  <!-- 2. 加算の算定手順 -->
+  <div class="manual-sec" id="m-kasan">
+    <h3>2. 加算の算定手順</h3>
+    <div id="video-kasan" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-kasan-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-kasan-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('kasan')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>2-1. 服薬管理指導料</h4>
+    <ul>
+      <li><b>薬A（45点）</b>：手帳あり＋3ヶ月以内再来局 → 手帳確認・シール貼付・記録</li>
+      <li><b>薬B（59点）</b>：手帳なし＋3ヶ月以内 → 手帳作成を勧奨</li>
+      <li><b>薬C（59点）</b>：3ヶ月以上空いた場合・初回</li>
+      <li><b>R8変更</b>：かかりつけ薬剤師が対応→1イ/2イ（要かかりつけ要件）</li>
+    </ul>
+    <div class="tip">手帳持参率を上げる→薬A率UP→地域支援加算の実績要件にも貢献</div>
+
+    <h4>2-2. 重複投薬・相互作用等防止加算 → R8：薬学的有害事象等防止加算</h4>
+    <ol>
+      <li>処方鑑査で重複・相互作用・副作用リスクを発見</li>
+      <li>処方医に<b>疑義照会</b>を実施</li>
+      <li>処方変更が実現した場合に算定（残薬以外40点/残薬20点）</li>
+      <li>薬歴に照会内容・結果を記録</li>
+    </ol>
+    <div class="warn">照会したが変更なしの場合は算定不可。記録は残すこと。</div>
+
+    <h4>2-3. 調剤後フォローアップ（調剤後薬剤管理指導料 60点）</h4>
+    <ol>
+      <li>対象患者を特定：<b>インスリン新規開始</b>または<b>慢性心不全</b></li>
+      <li>調剤後2週間以内に電話・メール等で連絡</li>
+      <li>服用状況・副作用の有無・血糖値等を確認</li>
+      <li>結果を処方医に<b>文書で報告</b></li>
+      <li>薬歴に記録し算定</li>
+    </ol>
+    <div class="tip">地域支援体制加算の届出薬局が要件。月1回算定可。</div>
+
+    <h4>2-4. 服薬情報等提供料（トレーシングレポート）</h4>
+    <ol>
+      <li>服薬指導中に気づいた情報（副作用・アドヒアランス・残薬等）を整理</li>
+      <li>トレーシングレポートを作成（文書）</li>
+      <li>処方医にFAX・郵送・電子で送付</li>
+      <li>提供料1（30点・医療機関からの求め）または提供料2（20点・薬剤師判断）で算定</li>
+    </ol>
+    <div class="tip">年30回以上/1万枚で地域支援加算の実績要件ク充足</div>
+
+    <h4>2-5. 吸入薬指導加算（30点）</h4>
+    <ol>
+      <li>喘息・COPD患者に吸入デバイスの<b>実技指導</b></li>
+      <li>チェックリストで手技を評価・記録</li>
+      <li>処方医に結果を<b>文書で報告</b></li>
+      <li>R6：3月に1回 / R8：6月に1回で算定</li>
+    </ol>
+
+    <h4>2-6. 外来服薬支援料1（185点・残薬整理）</h4>
+    <ol>
+      <li>多剤服用の高齢患者等の残薬を確認</li>
+      <li>患者の自宅の残薬を薬局に持参してもらう（ブラウンバッグ）</li>
+      <li>残薬を整理・日数調整</li>
+      <li>処方医に報告し、次回処方の調整を依頼</li>
+      <li>月1回算定</li>
+    </ol>
+
+    <h4>2-7. かかりつけ薬剤師</h4>
+    <ol>
+      <li>要件確認：経験3年以上・週32時間以上・6ヶ月以上在籍・研修認定薬剤師・地域活動</li>
+      <li>患者に説明し<b>文書で同意</b>を取得</li>
+      <li>R6：かかりつけ薬剤師指導料（76点）で算定</li>
+      <li>R8：服薬管理指導料1イ/2イとして算定＋FU加算（50点・3月1回）</li>
+    </ol>
+
+    <h4>2-8. 服用薬剤調整支援料1（125点）</h4>
+    <ol>
+      <li>内服薬<b>6種類以上</b>の患者を抽出</li>
+      <li>減薬の提案書を作成</li>
+      <li>処方医に提案し、<b>2種類以上の削減</b>が実現</li>
+      <li>月1回算定</li>
+    </ol>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-todoke" class="sub-pane">
+  <!-- 3. 届出・申請 -->
+  <div class="manual-sec" id="m-todoke">
+    <h3>3. 届出・申請の手順</h3>
+    <div id="video-todoke" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-todoke-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-todoke-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('todoke')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>3-1. 届出の基本フロー</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>施設基準の確認</b><br>算定したい加算の施設基準を確認（人員・設備・実績要件）。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>届出様式の準備</b><br>厚生局HPから様式をダウンロード。項目名をクリックするとリンク付きで確認可能。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>添付書類の作成</b><br>実績データの集計、配置薬剤師一覧、研修修了証のコピー等を準備。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>地方厚生局に提出</b><br>郵送・窓口・電子申請（保険医療機関等電子申請システム）のいずれか。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>受理確認</b><br>月初の開庁日に届出 → 同月1日から算定可能。</div></div>
+
+    <h4>3-2. 主な届出様式一覧</h4>
+    <ul>
+      <li><b>様式84</b>：調剤基本料</li>
+      <li><b>様式87</b>：後発医薬品調剤体制加算</li>
+      <li><b>様式87の3</b>：地域支援体制加算（共通基準）</li>
+      <li><b>様式87の3の2</b>：地域支援体制加算（実績基準）</li>
+      <li><b>様式87の3の4</b>：連携強化加算</li>
+      <li><b>様式87の3の5</b>：在宅薬学総合体制加算</li>
+      <li><b>様式87の3の6</b>：医療DX推進体制整備加算</li>
+      <li><b>様式88</b>：無菌製剤処理加算</li>
+      <li><b>様式89</b>：在宅麻薬持続注射・中心静脈栄養法</li>
+      <li><b>様式90</b>：かかりつけ薬剤師</li>
+      <li><b>様式92</b>：特定薬剤管理指導加算2</li>
+    </ul>
+    <div class="tip">月次報酬ページで各加算名をクリックすると、届出様式のPDFリンクが表示されます</div>
+
+    <h4>3-3. R8改定の届出スケジュール</h4>
+    <ul>
+      <li><b>R8.4.1</b>：薬価改定 施行（レセコンマスタ更新）</li>
+      <li><b>R8.5.31</b>：R8届出の提出期限</li>
+      <li><b>R8.6.1</b>：R8調剤報酬改定 施行</li>
+      <li><b>R9.5.31</b>：後発体制加算の経過措置終了</li>
+    </ul>
+    <div class="warn">届出は施行日前に完了させること。期限を過ぎると翌月からの算定になる。</div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-receipt" class="sub-pane">
+  <!-- 4. レセプト業務 -->
+  <div class="manual-sec" id="m-receipt">
+    <h3>4. レセプト業務（月次請求）</h3>
+    <div id="video-receipt" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-receipt-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-receipt-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('receipt')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>4-1. 月次スケジュール</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>月末：当月分の入力確認</b><br>算定漏れ・入力ミスがないか全件チェック。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>1日〜5日：レセプト作成</b><br>レセコンでレセプトデータを作成。突合点検・縦覧点検を実施。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>10日まで：オンライン請求</b><br>社保（支払基金）・国保（国保連）にオンラインで送信。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>翌月：返戻・査定対応</b><br>返戻レセプトの内容を確認し、修正・再請求。査定の場合は再審査請求を検討。</div></div>
+
+    <h4>4-2. チェックポイント</h4>
+    <ul>
+      <li><b>保険情報</b>：資格喪失・変更がないか</li>
+      <li><b>加算の算定要件</b>：月1回制限・3月1回制限の超過がないか</li>
+      <li><b>薬剤名・数量</b>：処方箋と一致しているか</li>
+      <li><b>後発品変更</b>：変更不可の薬に変更していないか</li>
+      <li><b>公費</b>：公費番号・受給者番号が正しいか</li>
+    </ul>
+
+    <h4>4-3. UKEファイルの活用</h4>
+    <ul>
+      <li>レセコンから出力されるRECEIPTS.UKEファイルにはレセプト全データが含まれる</li>
+      <li>migiudeの月次報酬ページでUKEファイルを読み込むと自動でデータ反映</li>
+      <li>社保・国保それぞれのUKEを読み込み可能</li>
+    </ul>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-zaitaku" class="sub-pane">
+  <!-- 5. 在宅訪問 -->
+  <div class="manual-sec" id="m-zaitaku">
+    <h3>5. 在宅訪問</h3>
+    <div id="video-zaitaku" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-zaitaku-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-zaitaku-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('zaitaku')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>5-1. 訪問前の準備</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>医師からの指示</b><br>訪問薬剤管理指導の依頼を受ける。薬学的管理指導計画書を作成。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>患者情報の確認</b><br>処方内容・疾患・ADL・介護度・他職種の関わりを確認。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>持参物の準備</b><br>薬剤・お薬カレンダー・血圧計等のツール・訪問記録用紙。</div></div>
+
+    <h4>5-2. 訪問時の業務</h4>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>残薬確認</b><br>保管場所を確認し、残薬の種類・数量を把握。期限切れ薬の回収。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>服薬状況の確認</b><br>飲み忘れ・自己中断・副作用症状のヒアリング。バイタルサイン確認。</div></div>
+    <div class="step"><div class="step-num">6</div><div class="step-body"><b>服薬指導</b><br>用法用量の再確認、一包化の説明、服薬カレンダーのセット。</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-body"><b>環境確認</b><br>薬の保管環境（温度・湿度・直射日光）、転倒リスク等を確認。</div></div>
+
+    <h4>5-3. 訪問後の業務</h4>
+    <div class="step"><div class="step-num">8</div><div class="step-body"><b>報告書の作成</b><br>訪問結果を処方医に文書で報告。残薬状況・副作用・服薬アドヒアランス・提案事項を記載。</div></div>
+    <div class="step"><div class="step-num">9</div><div class="step-body"><b>ケアマネ等への情報共有</b><br>必要に応じて介護支援専門員・訪問看護師等に情報提供。</div></div>
+    <div class="step"><div class="step-num">10</div><div class="step-body"><b>薬歴記録・算定</b><br>訪問内容をSOAP形式で記録。訪問薬剤管理指導料を算定。</div></div>
+
+    <h4>5-4. 算定できる報酬</h4>
+    <ul>
+      <li><b>在宅患者訪問薬剤管理指導料</b>：650/320/290点（届出必要）</li>
+      <li><b>在宅薬学総合体制加算</b>：R8で30点/100点（届出必要）</li>
+      <li><b>麻薬管理加算</b>：100点（麻薬使用患者）</li>
+      <li><b>乳幼児加算</b>：100点（6歳未満）</li>
+      <li><b>R8新設：かかりつけ薬剤師訪問加算</b>：230点（6月1回）</li>
+    </ul>
+    <div class="tip">年間24回以上（1万枚あたり）で地域支援加算の実績要件キ充足</div>
+  </div>
+
+  </div><!-- /sub-pane -->
+  <div id="man-daily" class="sub-pane">
+  <!-- 6. 日次・月次業務 -->
+  <div class="manual-sec" id="m-daily">
+    <h3>6. 日次・月次業務</h3>
+    <div id="video-daily" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-daily-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-daily-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('daily')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>6-1. 開局時</h4>
+    <ul>
+      <li>レセコン・分包機等の起動確認</li>
+      <li>麻薬金庫の施錠確認・在庫確認</li>
+      <li>冷蔵庫温度の記録（バイオ医薬品・インスリン等）</li>
+      <li>不足医薬品の発注</li>
+    </ul>
+
+    <h4>6-2. 営業中</h4>
+    <ul>
+      <li>処方箋受付→調剤→鑑査→投薬（1-1〜1-4参照）</li>
+      <li>疑義照会の実施と記録</li>
+      <li>トレーシングレポートの作成・送付</li>
+      <li>在宅訪問の実施（予定がある場合）</li>
+      <li>医薬品の検品・入庫</li>
+    </ul>
+
+    <h4>6-3. 閉局時</h4>
+    <ul>
+      <li>日計表の確認（処方箋枚数・売上）</li>
+      <li>麻薬帳簿の記入・在庫照合</li>
+      <li>翌日の在宅訪問準備</li>
+      <li>冷蔵庫温度の最終記録</li>
+      <li>施錠・警備セット</li>
+    </ul>
+
+    <h4>6-4. 月次業務</h4>
+    <ul>
+      <li><b>1日〜10日</b>：レセプト作成・オンライン請求（4章参照）</li>
+      <li><b>月末</b>：翌月の発注計画・在庫棚卸</li>
+      <li><b>随時</b>：返戻レセプト対応・再審査請求</li>
+      <li><b>随時</b>：migiudeへの月次データ入力（CSV or UKE）</li>
+      <li><b>四半期</b>：施設基準の実績確認（経営改善ページの達成目標で確認）</li>
+    </ul>
+
+    <h4>6-5. 年次業務</h4>
+    <ul>
+      <li><b>4月</b>：薬価改定対応（レセコンマスタ更新）</li>
+      <li><b>5月</b>：施設基準の届出更新（実績期間：前年5月〜当年4月）</li>
+      <li><b>6月</b>：診療報酬改定対応（改定年のみ）</li>
+      <li><b>随時</b>：麻薬年間届出・毒薬管理簿の確認</li>
+      <li><b>随時</b>：薬剤師の研修認定更新</li>
+    </ul>
+  </div>
+  </div><!-- /sub-pane -->
+
+  <!-- 棚卸マニュアル -->
+  <div id="man-tanaoroshi" class="sub-pane">
+  <div class="manual-sec">
+    <h3>棚卸業務マニュアル</h3>
+    <div id="video-tanaoroshi" style="margin-bottom:16px;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:var(--radius);text-align:center;min-height:60px">
+      <div style="font-size:12px;color:var(--text2)">動画・資料エリア（URLを貼り付けて追加）</div>
+      <div id="video-tanaoroshi-list" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+        <input type="text" id="video-tanaoroshi-url" placeholder="YouTube URL or ファイルパス" style="width:300px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <button onclick="addVideo('tanaoroshi')" style="padding:4px 12px;font-size:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer">追加</button>
+      </div>
+    </div>
+
+    <h4>1. 棚卸の目的</h4>
+    <ul>
+      <li><b>在庫の正確性確保</b>：帳簿上の在庫数と実際の在庫数の差異を把握</li>
+      <li><b>期限切れ防止</b>：消費期限が近い医薬品の早期発見と対応</li>
+      <li><b>不動在庫の発見</b>：長期間動いていない医薬品の特定・返品検討</li>
+      <li><b>廃棄損の把握</b>：廃棄医薬品の金額を正確に記録（経理上は仕入原価に含む）</li>
+      <li><b>決算対応</b>：期末棚卸資産の正確な計上</li>
+    </ul>
+
+    <h4>2. 実施頻度</h4>
+    <table class="tbl" style="font-size:13px;margin-bottom:12px">
+      <tr><td><b>全品棚卸</b></td><td>年2回（決算月＋中間）</td><td>全品目を実数確認</td></tr>
+      <tr><td><b>循環棚卸</b></td><td>毎月</td><td>棚ごとにローテーションで実施</td></tr>
+      <tr><td><b>スポット棚卸</b></td><td>随時</td><td>高額品・麻薬・向精神薬は毎日確認</td></tr>
+    </table>
+
+    <h4>3. 棚卸手順</h4>
+    <div class="step"><div class="step-num">1</div><div class="step-body"><b>準備</b><br>在庫管理ページで「棚卸開始」をクリック。現在の帳簿在庫が棚卸表にコピーされる。棚卸日を入力。</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-body"><b>実数カウント</b><br>棚ごとに2名1組で実施。1名がカウント、1名が入力。開封品・未開封品を区別して数える。</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-body"><b>差異確認</b><br>帳簿数と実数の差異が表示される。差異がある品目は原因を調査（処方漏れ・入力ミス・破損等）。</div></div>
+    <div class="step"><div class="step-num">4</div><div class="step-body"><b>結果保存</b><br>「棚卸結果を保存」で履歴に記録。帳簿在庫を実数に修正。差異の大きい品目は備考に原因を記載。</div></div>
+    <div class="step"><div class="step-num">5</div><div class="step-body"><b>期限切れ対応</b><br>期限切れ品を廃棄記録に登録。期限3ヶ月以内の品目はリストアップして優先使用・返品を検討。</div></div>
+
+    <h4>4. 麻薬・向精神薬の棚卸</h4>
+    <div class="warn">麻薬は<b>毎日の受払い記録</b>が法定義務。帳簿と実数が1錠でも合わない場合は直ちに管理薬剤師に報告。都道府県への届出が必要な場合がある。</div>
+    <ul>
+      <li>麻薬帳簿と照合（品名・ロット番号単位）</li>
+      <li>向精神薬は2年間の記録保存義務</li>
+      <li>毒薬・劇薬も施錠管理下で在庫確認</li>
+    </ul>
+
+    <h4>5. 不動在庫の対応</h4>
+    <ul>
+      <li><b>3ヶ月以上不動</b>：卸への返品を検討（返品期限を確認）</li>
+      <li><b>6ヶ月以上不動</b>：近隣薬局への譲渡を検討</li>
+      <li><b>期限6ヶ月以内＋不動</b>：廃棄候補としてリストアップ</li>
+    </ul>
+    <div class="tip">不動在庫の削減は直接的な経費削減につながる。在庫回転率の目標は月12回以上。</div>
+  </div>
+  </div><!-- /sub-pane tanaoroshi -->
+
+  <!-- 就業規則 -->
+  <div id="man-kisoku" class="sub-pane">
+  <div class="manual-sec">
+    <h3>8. 就業規則</h3>
+
+    <h4>8-1. 勤務時間</h4>
+    <ul>
+      <li><b>営業時間</b>：月〜金 9:00〜18:00 / 土 9:00〜13:00</li>
+      <li><b>所定労働時間</b>：1日8時間（休憩1時間）、週40時間</li>
+      <li><b>早番</b>：8:30〜17:30 / <b>遅番</b>：9:30〜18:30</li>
+      <li><b>時間外労働</b>：36協定の範囲内、月45時間・年360時間以内</li>
+    </ul>
+    <div class="tip">かかりつけ薬剤師の要件：週32時間以上勤務が必要</div>
+
+    <h4>8-2. 休日・休暇</h4>
+    <ul>
+      <li><b>定休日</b>：日曜・祝日</li>
+      <li><b>年間休日</b>：○○日（薬局に合わせて設定）</li>
+      <li><b>年次有給休暇</b>：
+        <ul>
+          <li>入社6ヶ月後：10日</li>
+          <li>1年6ヶ月：11日 / 2年6ヶ月：12日 / 3年6ヶ月：14日</li>
+          <li>4年6ヶ月：16日 / 5年6ヶ月：18日 / 6年6ヶ月以上：20日</li>
+        </ul>
+      </li>
+      <li><b>年5日の取得義務</b>：使用者は年10日以上付与された労働者に年5日を時季指定して取得させる義務</li>
+      <li><b>計画的付与</b>：労使協定により年5日を超える部分について計画的に付与可能</li>
+    </ul>
+    <div class="warn">年5日の有給取得義務に違反すると、労働者1人あたり30万円以下の罰金</div>
+
+    <h4>8-3. パートタイマーの有給休暇（比例付与）</h4>
+    <table class="entry-tbl" style="font-size:12px;max-width:600px">
+      <thead><tr><th>週所定日数</th><th>6ヶ月</th><th>1.5年</th><th>2.5年</th><th>3.5年</th><th>4.5年</th><th>5.5年</th><th>6.5年〜</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:bold">5日</td><td>10</td><td>11</td><td>12</td><td>14</td><td>16</td><td>18</td><td>20</td></tr>
+        <tr><td style="font-weight:bold">4日</td><td>7</td><td>8</td><td>9</td><td>10</td><td>12</td><td>13</td><td>15</td></tr>
+        <tr><td style="font-weight:bold">3日</td><td>5</td><td>6</td><td>6</td><td>8</td><td>9</td><td>10</td><td>11</td></tr>
+        <tr><td style="font-weight:bold">2日</td><td>3</td><td>4</td><td>4</td><td>5</td><td>6</td><td>6</td><td>7</td></tr>
+        <tr><td style="font-weight:bold">1日</td><td>1</td><td>2</td><td>2</td><td>2</td><td>3</td><td>3</td><td>3</td></tr>
+      </tbody>
+    </table>
+
+    <h4>8-4. 服務規律</h4>
+    <ul>
+      <li>調剤過誤防止のため、鑑査は調製者と別の薬剤師が行う</li>
+      <li>麻薬・向精神薬・毒薬の取扱いは所定の手順に従う</li>
+      <li>患者の個人情報は薬局外に持ち出さない</li>
+      <li>処方箋・薬歴等の書類は3年間保管</li>
+      <li>白衣・名札を着用し、清潔な身だしなみを保つ</li>
+    </ul>
+
+    <h4>8-5. 研修・資格</h4>
+    <ul>
+      <li><b>認定薬剤師</b>：研修認定の取得・更新を推奨（かかりつけ薬剤師の要件）</li>
+      <li><b>研修会</b>：月1回以上の薬局内研修、年2回以上の外部研修</li>
+      <li><b>地域活動</b>：学校薬剤師・健康フェア等の地域活動への参画（施設基準要件）</li>
+    </ul>
+
+    <h4>8-6. 緊急時対応</h4>
+    <ul>
+      <li><b>調剤過誤発生時</b>：直ちに管理薬剤師に報告→患者対応→処方医連絡→インシデントレポート作成</li>
+      <li><b>災害時</b>：連携強化加算の要件に基づき、自治体の要請に応じて対応（医薬品供給・避難所での服薬相談等）</li>
+      <li><b>新興感染症発生時</b>：PCR検査対応・自宅療養者への薬剤配送等</li>
+    </ul>
+
+    <h4>8-7. 退職・解雇</h4>
+    <ul>
+      <li><b>自己都合退職</b>：退職日の30日以上前に書面で届出</li>
+      <li><b>引き継ぎ</b>：かかりつけ薬剤師の患者がいる場合は後任への引き継ぎを完了させる</li>
+      <li><b>守秘義務</b>：退職後も患者情報の守秘義務は継続</li>
+    </ul>
+    <div class="warn">この就業規則はテンプレートです。薬局の実態に合わせて編集してください。</div>
+  </div>
+  </div><!-- /sub-pane kisoku -->
+
+  <!-- 業務手順書（MDから読み込み） -->
+  <div id="man-tejunsho" class="sub-pane">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0">📖 医薬品の安全使用のための業務手順書</h3>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="tejunsho-search" placeholder="検索..." oninput="searchTejunsho()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;width:200px">
+          <span style="font-size:12px;color:var(--text2)">令和6年7月版</span>
+        </div>
+      </div>
+      <!-- 目次 -->
+      <div id="tejunsho-toc" style="margin-bottom:16px;padding:12px;background:var(--bg);border-radius:var(--radius);font-size:13px;max-height:200px;overflow-y:auto;cursor:pointer"></div>
+      <!-- 本文 -->
+      <div id="tejunsho-body" style="font-size:13px;line-height:1.8;max-height:70vh;overflow-y:auto;padding-right:8px"></div>
+    </div>
+  </div>

@@ -1,0 +1,134 @@
+<div class="sub-tabs">
+    <div class="sub-tab active" onclick="showSubTab('cal-schedule',this)">カレンダー</div>
+    <div class="sub-tab" onclick="showSubTab('cal-shift',this)">シフト</div>
+    <div class="sub-tab" onclick="showSubTab('cal-tasks',this)">タスク</div>
+  </div>
+
+  <!-- 予定タブ -->
+  <div id="cal-schedule" class="sub-pane active">
+  <div class="section">
+    <div class="cal-nav">
+      <button onclick="calMove(-1)">&lt;</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button onclick="calMove(1)">&gt;</button>
+      <button onclick="calToday()" style="margin-left:8px;font-size:12px">今月</button>
+      <div style="margin-left:auto;display:flex;gap:6px;font-size:11px">
+        <span class="cal-evt todoke">届出</span>
+        <span class="cal-evt kigen">期限</span>
+        <span class="cal-evt jimu">事務</span>
+        <span class="cal-evt teiki">定期</span>
+        <span class="cal-evt task">タスク</span>
+        <span class="cal-evt custom">予定</span>
+      </div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">予定を追加</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="date" id="cal-add-date" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+      <input type="text" id="cal-add-text" placeholder="内容" style="flex:1;min-width:200px;padding:6px;border:1px solid var(--border);border-radius:4px">
+      <select id="cal-add-type" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+        <option value="custom">予定</option>
+        <option value="task">タスク</option>
+        <option value="todoke">届出</option>
+        <option value="kigen">期限</option>
+        <option value="jimu">事務</option>
+        <option value="teiki">定期</option>
+      </select>
+      <select id="cal-add-assign" style="padding:6px;border:1px solid var(--border);border-radius:4px">
+        <option value="">担当なし</option>
+      </select>
+      <button class="btn btn-primary" onclick="addCalEvent()" style="padding:6px 16px">追加</button>
+    </div>
+  </div>
+  </div>
+
+  <!-- シフトタブ -->
+  <div id="cal-shift" class="sub-pane">
+  <div class="section">
+    <div class="section-title">スタッフ管理</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <div><div style="font-size:11px;color:var(--text2)">名前</div>
+        <input type="text" id="staff-add-name" placeholder="名前" style="width:100px;padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px"></div>
+      <div><div style="font-size:11px;color:var(--text2)">職種</div>
+        <select id="staff-add-role" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+          <option value="薬剤師">薬剤師</option>
+          <option value="事務">事務</option>
+        </select></div>
+      <div><div style="font-size:11px;color:var(--text2)">色</div>
+        <input type="color" id="staff-add-color" value="#534ab7" style="width:36px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer"></div>
+      <button class="btn btn-primary" onclick="addStaff()" style="padding:4px 12px;font-size:12px">追加</button>
+    </div>
+    <div id="staff-list" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+  </div>
+
+  <div class="section">
+    <div class="cal-nav">
+      <button onclick="shiftMove(-1)">&lt;</button>
+      <div class="cal-title" id="shift-title"></div>
+      <button onclick="shiftMove(1)">&gt;</button>
+      <button onclick="shiftToday()" style="margin-left:8px;font-size:12px">今月</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="entry-tbl" id="shift-table" style="font-size:13px">
+      <thead id="shift-thead"></thead>
+      <tbody id="shift-tbody"></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">有給休暇管理</div>
+    <table class="entry-tbl" style="font-size:13px">
+      <thead><tr>
+        <th style="text-align:left">スタッフ</th>
+        <th style="text-align:left">職種</th>
+        <th style="text-align:center">付与日数</th>
+        <th style="text-align:center">使用済</th>
+        <th style="text-align:center">残日数</th>
+        <th style="text-align:center">取得率</th>
+        <th style="text-align:center">次回付与日</th>
+      </tr></thead>
+      <tbody id="yukyu-tbody"></tbody>
+    </table>
+    <div class="tip" style="margin-top:8px">シフトで「有」を入れると自動で使用済にカウントされます。付与日数・次回付与日はスタッフ名の右の編集ボタンで設定。</div>
+  </div>
+  </div>
+
+  <!-- タスクタブ -->
+  <div id="cal-tasks" class="sub-pane">
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      タスク
+      <span id="daily-task-progress" style="font-size:13px;font-weight:bold;color:var(--teal)"></span>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:end">
+      <input type="text" id="task-add-text" placeholder="タスクの内容" style="flex:1;min-width:200px;padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <select id="task-add-assign" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="">担当なし</option>
+      </select>
+      <input type="date" id="task-add-due" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+      <select id="task-add-priority" style="padding:6px 8px;font-size:13px;border:1px solid var(--border);border-radius:4px">
+        <option value="normal">普通</option>
+        <option value="high">高</option>
+        <option value="low">低</option>
+      </select>
+      <button class="btn btn-primary" onclick="addDailyTask()" style="padding:6px 14px;font-size:13px">追加</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text2)">表示：</span>
+      <select id="task-view" onchange="renderDailyTasks()" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <option value="all">全て</option>
+        <option value="person">担当者別</option>
+        <option value="due">期限順</option>
+        <option value="active">未完了のみ</option>
+      </select>
+      <select id="task-filter-person" onchange="renderDailyTasks()" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px">
+        <option value="">全員</option>
+      </select>
+    </div>
+    <div id="daily-task-list"></div>
+  </div>
+  </div>
