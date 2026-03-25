@@ -5,3 +5,6 @@ master/
 *.db
 .claude/
 pdf2csv.exe
+レセコンデータ/
+基本マスター/
+*.pdf
